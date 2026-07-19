@@ -10,3 +10,9 @@ npm-debug.log*
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+
+# npm lockfile — repo uses bun (see package.json packageManager)
+package-lock.json
+
+# local agent/session config
+.claude/

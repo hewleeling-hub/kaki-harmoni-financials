@@ -1,0 +1,10 @@
+{
+  "name": "Kaki Harmoni Financials",
+  "short_name": "Kaki Harmoni",
+  "description": "Counter POS + bookkeeping for a 4-chair foot-spa café",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#059669",
+  "icons": []
+}
