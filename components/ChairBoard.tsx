@@ -42,26 +42,50 @@ export function ChairBoard() {
   const [selected, setSelected] = useState<ChairWithSession | null>(null);
   const reconciledRef = useRef(false);
 
-  const load = useCallback(async (opts?: { reconcile?: boolean }) => {
+  // One board GET with a hard timeout so a hung request can't wedge the UI.
+  async function fetchBoard(): Promise<BoardData> {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
     try {
-      if (opts?.reconcile) {
-        await fetch("/api/sessions/reconcile", { method: "POST" }).catch(
-          () => {},
-        );
-      }
-      const res = await fetch("/api/board", { cache: "no-store" });
+      const res = await fetch("/api/board", {
+        cache: "no-store",
+        signal: ctrl.signal,
+      });
       if (!res.ok) throw new Error(`Board failed (${res.status})`);
-      const json = (await res.json()) as BoardData;
-      setData(json);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load board");
+      return (await res.json()) as BoardData;
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  const load = useCallback(async (opts?: { reconcile?: boolean; retries?: number }) => {
+    // Fire-and-forget: advancing timers must never block or fail the board load.
+    if (opts?.reconcile) {
+      fetch("/api/sessions/reconcile", { method: "POST" }).catch(() => {});
+    }
+    const retries = opts?.retries ?? 0;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const json = await fetchBoard();
+        setData(json);
+        setError(null);
+        return;
+      } catch (e) {
+        // Only surface an error once retries are exhausted. A later poll (or the
+        // Retry button) still recovers on its own if data eventually arrives.
+        if (attempt === retries) {
+          setError(e instanceof Error ? e.message : "Failed to load board");
+        } else {
+          await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
+        }
+      }
     }
   }, []);
 
-  // Initial load + poll every 5s (with reconcile) to advance timers server-side.
+  // Initial load (with retries so a cold-start hiccup doesn't dump to the error
+  // screen) + poll every 5s to advance timers server-side and reconcile the board.
   useEffect(() => {
-    load({ reconcile: true });
+    load({ reconcile: true, retries: 3 });
     reconciledRef.current = true;
     const poll = setInterval(() => load({ reconcile: true }), 5000);
     return () => clearInterval(poll);
@@ -137,7 +161,10 @@ export function ChairBoard() {
         <p className="font-medium">Couldn&apos;t load the chair board.</p>
         <p className="text-sm">{error}</p>
         <button
-          onClick={() => load({ reconcile: true })}
+          onClick={() => {
+            setError(null);
+            load({ reconcile: true, retries: 3 });
+          }}
           className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white"
         >
           Retry
