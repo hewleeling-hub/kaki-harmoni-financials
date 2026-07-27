@@ -76,10 +76,11 @@ export function ExpenseForm() {
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        // Keep the stored receipt even if OCR is off/unavailable.
+        // OCR is off/unavailable — the user fills in the form manually. (The
+        // separate receipt upload, if it succeeded, is shown via receiptUrl.)
         setScanNote(
           j.needs_key
-            ? "Receipt attached. Auto-fill is off — enter the details manually."
+            ? "Auto-fill is off — enter the details manually."
             : null,
         );
         if (!j.needs_key) setError(j.error || "Could not scan the receipt.");
