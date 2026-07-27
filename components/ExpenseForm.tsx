@@ -26,6 +26,16 @@ export function ExpenseForm() {
   const [scanning, setScanning] = useState(false);
   const [scanNote, setScanNote] = useState<string | null>(null);
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+  const [customCategory, setCustomCategory] = useState("");
+
+  // When "Other" is picked, the typed label becomes the category (stored as
+  // free text). Common ones can be promoted into EXPENSE_CATEGORIES later.
+  function effectiveCategory() {
+    if (form.category === "other" && customCategory.trim()) {
+      return customCategory.trim().toLowerCase();
+    }
+    return form.category;
+  }
 
   const willReimburse = REIMBURSABLE_PAYERS.includes(form.payer);
 
@@ -118,7 +128,12 @@ export function ExpenseForm() {
     const res = await fetch("/api/expenses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, amount: amt, receipt_url: receiptUrl }),
+      body: JSON.stringify({
+        ...form,
+        category: effectiveCategory(),
+        amount: amt,
+        receipt_url: receiptUrl,
+      }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -234,11 +249,29 @@ export function ExpenseForm() {
           >
             {EXPENSE_CATEGORIES.map((c) => (
               <option key={c} value={c} className="capitalize">
-                {c.replace("_", " ")}
+                {c.replace(/_/g, " ")}
               </option>
             ))}
           </select>
         </label>
+
+        {form.category === "other" && (
+          <label className="block text-sm">
+            <span className="mb-1 block text-neutral-600">
+              Custom category (optional)
+            </span>
+            <input
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              maxLength={50}
+              placeholder="e.g. furniture, marketing, wages, transport"
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2"
+            />
+            <span className="mt-1 block text-xs text-neutral-400">
+              Leave blank to just record it as &ldquo;Other&rdquo;.
+            </span>
+          </label>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <label className="block text-sm">

@@ -25,6 +25,10 @@ export const EXPENSE_CATEGORIES = [
   "maintenance",
   "utilities",
   "rent",
+  "equipment",
+  "marketing",
+  "wages",
+  "transport",
   "other",
 ] as const;
 

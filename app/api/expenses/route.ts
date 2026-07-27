@@ -1,11 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  EXPENSE_CATEGORIES,
-  PAYERS,
-  EXPENSE_TYPES,
-  REIMBURSABLE_PAYERS,
-} from "@/lib/constants";
+import { PAYERS, EXPENSE_TYPES, REIMBURSABLE_PAYERS } from "@/lib/constants";
 import { suggestExpenseCategory } from "@/lib/aiCategory";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +23,8 @@ export async function POST(req: Request) {
 
   const vendor = String(body.vendor ?? "").trim();
   const amount = Number(body.amount);
-  const category = String(body.category ?? "");
+  // Category is free text (dropdown values + user-defined via "Other").
+  const category = String(body.category ?? "").trim().toLowerCase() || "other";
   const payer = String(body.payer ?? "company");
   const expense_type = String(body.expense_type ?? "expense");
 
@@ -39,8 +35,11 @@ export async function POST(req: Request) {
       { error: "Amount must be greater than zero" },
       { status: 400 },
     );
-  if (!EXPENSE_CATEGORIES.includes(category as never))
-    return NextResponse.json({ error: "Invalid category" }, { status: 400 });
+  if (category.length > 50)
+    return NextResponse.json(
+      { error: "Category is too long (max 50 chars)" },
+      { status: 400 },
+    );
   if (!PAYERS.some((p) => p.value === payer))
     return NextResponse.json({ error: "Invalid payer" }, { status: 400 });
   if (!EXPENSE_TYPES.some((t) => t.value === expense_type))

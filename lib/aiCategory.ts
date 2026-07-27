@@ -25,6 +25,31 @@ const RULES: { category: (typeof EXPENSE_CATEGORIES)[number]; keywords: string[]
     category: "rent",
     keywords: ["rent", "lease", "rental"],
   },
+  {
+    category: "equipment",
+    keywords: [
+      "furniture", "chair", "table", "desk", "stool", "bookcase", "cabinet",
+      "shelf", "equipment", "appliance", "machine", "aircond", "heater",
+    ],
+  },
+  {
+    category: "marketing",
+    keywords: [
+      "marketing", "advert", "ad ", "ads", "flyer", "promo", "signage",
+      "banner", "facebook", "instagram", "social", "campaign",
+    ],
+  },
+  {
+    category: "wages",
+    keywords: ["wage", "salary", "payroll", "allowance", "commission", "staff pay"],
+  },
+  {
+    category: "transport",
+    keywords: [
+      "petrol", "fuel", "grab", "delivery", "courier", "parking", "transport",
+      "toll", "lorry", "van", "shipping", "postage",
+    ],
+  },
 ];
 
 export type CategorySuggestion = {
