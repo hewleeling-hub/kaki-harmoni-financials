@@ -97,7 +97,10 @@ export async function POST(req: Request) {
 
   try {
     const message = await client.messages.create({
-      model: "claude-opus-4-8",
+      // Haiku 4.5: fast + low-cost, supports vision + structured outputs — the
+      // right tier for high-volume receipt OCR. Swap to claude-opus-4-8 for
+      // harder receipts if accuracy ever falls short.
+      model: "claude-haiku-4-5",
       max_tokens: 1024,
       output_config: { format: { type: "json_schema", schema: EXTRACTION_SCHEMA } },
       messages: [

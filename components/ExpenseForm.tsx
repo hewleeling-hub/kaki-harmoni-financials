@@ -25,6 +25,7 @@ export function ExpenseForm() {
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanNote, setScanNote] = useState<string | null>(null);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
 
   const willReimburse = REIMBURSABLE_PAYERS.includes(form.payer);
 
@@ -56,6 +57,18 @@ export function ExpenseForm() {
     setScanning(true);
     try {
       const data = await fileToBase64(file);
+
+      // Store the original receipt (audit trail) — independent of OCR, so this
+      // works even when scanning is disabled. Best-effort; failure is non-fatal.
+      fetch("/api/receipts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data, media_type: file.type }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => j?.receipt_url && setReceiptUrl(j.receipt_url))
+        .catch(() => {});
+
       const res = await fetch("/api/expenses/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -63,7 +76,13 @@ export function ExpenseForm() {
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setError(j.error || "Could not scan the receipt.");
+        // Keep the stored receipt even if OCR is off/unavailable.
+        setScanNote(
+          j.needs_key
+            ? "Receipt attached. Auto-fill is off — enter the details manually."
+            : null,
+        );
+        if (!j.needs_key) setError(j.error || "Could not scan the receipt.");
         return;
       }
       const f = j.fields || {};
@@ -98,7 +117,7 @@ export function ExpenseForm() {
     const res = await fetch("/api/expenses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, amount: amt }),
+      body: JSON.stringify({ ...form, amount: amt, receipt_url: receiptUrl }),
     });
     setBusy(false);
     if (!res.ok) {
@@ -140,6 +159,19 @@ export function ExpenseForm() {
         </div>
         {scanNote && (
           <p className="mt-2 text-xs font-medium text-emerald-800">{scanNote}</p>
+        )}
+        {receiptUrl && (
+          <p className="mt-1 text-xs text-emerald-700">
+            📎 Receipt attached ·{" "}
+            <a
+              href={receiptUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              view
+            </a>
+          </p>
         )}
       </div>
 

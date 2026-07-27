@@ -59,6 +59,7 @@ export async function POST(req: Request) {
       category,
       payer,
       expense_type,
+      receipt_url: body.receipt_url ? String(body.receipt_url) : null,
       ...suggestion,
     })
     .select()

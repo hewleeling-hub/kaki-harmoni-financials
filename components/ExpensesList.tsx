@@ -103,7 +103,20 @@ export function ExpensesList() {
                     {e.expense_date}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="font-medium">{e.vendor}</div>
+                    <div className="font-medium">
+                      {e.vendor}
+                      {e.receipt_url && (
+                        <a
+                          href={e.receipt_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ml-2 text-xs font-normal text-emerald-700 underline"
+                          title="View receipt"
+                        >
+                          📎 receipt
+                        </a>
+                      )}
+                    </div>
                     {e.description && (
                       <div className="text-xs text-neutral-500">
                         {e.description}
