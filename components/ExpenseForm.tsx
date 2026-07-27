@@ -76,14 +76,14 @@ export function ExpenseForm() {
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        // OCR is off/unavailable — the user fills in the form manually. (The
-        // separate receipt upload, if it succeeded, is shown via receiptUrl.)
-        setScanNote(
-          j.needs_key
-            ? "Auto-fill is off — enter the details manually."
-            : null,
-        );
-        if (!j.needs_key) setError(j.error || "Could not scan the receipt.");
+        // OCR is off/unavailable — show a calm note (not a red error) and let
+        // the user fill in the form manually. The receipt upload, if it
+        // succeeded, is shown separately via receiptUrl.
+        if (j.needs_key) {
+          setScanNote(j.error || "Auto-fill is off — enter the details manually.");
+        } else {
+          setError(j.error || "Could not scan the receipt.");
+        }
         return;
       }
       const f = j.fields || {};

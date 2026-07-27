@@ -124,13 +124,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ fields: parsed });
   } catch (e) {
     if (e instanceof Anthropic.APIError) {
-      return NextResponse.json(
-        { error: `Scan failed (${e.status}). ${e.message}` },
-        { status: 502 },
-      );
+      const msg = String(e.message || "").toLowerCase();
+      let friendly =
+        "Couldn't read the receipt automatically — please enter the details below manually.";
+      if (e.status === 401) {
+        friendly =
+          "Receipt scanning key is invalid. Check ANTHROPIC_API_KEY in the project settings.";
+      } else if (msg.includes("credit balance") || msg.includes("billing")) {
+        friendly =
+          "Receipt scanning is paused — the Anthropic API has no credit. Top up credit in the Anthropic console to re-enable it. Enter the details manually for now.";
+      } else if (e.status === 429) {
+        friendly =
+          "Receipt scanning is busy right now — try again in a moment, or enter the details manually.";
+      }
+      // needs_key=true keeps the form's friendly "enter manually" path (no red error toast).
+      return NextResponse.json({ error: friendly, needs_key: true }, { status: 502 });
     }
     return NextResponse.json(
-      { error: "Could not read the receipt. Enter the details manually." },
+      { error: "Could not read the receipt. Enter the details manually.", needs_key: true },
       { status: 500 },
     );
   }
