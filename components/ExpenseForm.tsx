@@ -23,11 +23,68 @@ export function ExpenseForm() {
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanNote, setScanNote] = useState<string | null>(null);
 
   const willReimburse = REIMBURSABLE_PAYERS.includes(form.payer);
 
   function set<K extends keyof typeof form>(k: K, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = String(reader.result);
+        // strip the "data:<type>;base64," prefix
+        resolve(result.slice(result.indexOf(",") + 1));
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Scan a receipt photo/PDF → pre-fill the form. The user still reviews + saves.
+  async function onReceiptPicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file
+    if (!file) return;
+
+    setError(null);
+    setScanNote(null);
+    setScanning(true);
+    try {
+      const data = await fileToBase64(file);
+      const res = await fetch("/api/expenses/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data, media_type: file.type }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(j.error || "Could not scan the receipt.");
+        return;
+      }
+      const f = j.fields || {};
+      setForm((prev) => ({
+        ...prev,
+        vendor: f.vendor || prev.vendor,
+        description: f.description || prev.description,
+        amount: f.amount ? String(f.amount) : prev.amount,
+        expense_date: f.expense_date || prev.expense_date,
+        category: EXPENSE_CATEGORIES.includes(f.category) ? f.category : prev.category,
+        expense_type:
+          f.expense_type === "fixed_asset" || f.expense_type === "expense"
+            ? f.expense_type
+            : prev.expense_type,
+      }));
+      setScanNote("Scanned — please review the details below before saving.");
+    } catch {
+      setError("Could not read that file. Enter the details manually.");
+    } finally {
+      setScanning(false);
+    }
   }
 
   async function submit(e: React.FormEvent) {
@@ -55,6 +112,37 @@ export function ExpenseForm() {
   return (
     <div className="mx-auto max-w-lg">
       <h1 className="mb-4 text-2xl font-bold tracking-tight">New Expense</h1>
+      <div className="mb-4 rounded-2xl border border-dashed border-emerald-300 bg-emerald-50 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-emerald-900">
+              📷 Scan a receipt
+            </p>
+            <p className="text-xs text-emerald-700">
+              Snap a photo or upload a PDF and we&apos;ll fill in the details for you.
+            </p>
+          </div>
+          <label
+            className={`shrink-0 cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-white ${
+              scanning ? "bg-emerald-400" : "bg-emerald-600 hover:bg-emerald-700"
+            }`}
+          >
+            {scanning ? "Scanning…" : "Scan receipt"}
+            <input
+              type="file"
+              accept="image/*,application/pdf"
+              capture="environment"
+              className="hidden"
+              disabled={scanning}
+              onChange={onReceiptPicked}
+            />
+          </label>
+        </div>
+        {scanNote && (
+          <p className="mt-2 text-xs font-medium text-emerald-800">{scanNote}</p>
+        )}
+      </div>
+
       <form
         onSubmit={submit}
         className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5"
