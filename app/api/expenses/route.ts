@@ -48,21 +48,47 @@ export async function POST(req: Request) {
   const supabase = createAdminClient();
   const suggestion = suggestExpenseCategory(vendor, body.description);
 
-  const { data: expense, error } = await supabase
+  // Normalise line items to {description, quantity, unit_price, amount}.
+  const lineItems = Array.isArray(body.line_items)
+    ? body.line_items
+        .map((li: Record<string, unknown>) => ({
+          description: String(li?.description ?? "").trim(),
+          quantity: Number(li?.quantity) || 0,
+          unit_price: Number(li?.unit_price) || 0,
+          amount: Number(li?.amount) || 0,
+        }))
+        .filter((li: { description: string }) => li.description)
+    : [];
+
+  const row = {
+    expense_date: body.expense_date || new Date().toISOString().slice(0, 10),
+    vendor,
+    description: body.description ? String(body.description) : null,
+    amount,
+    category,
+    payer,
+    expense_type,
+    receipt_url: body.receipt_url ? String(body.receipt_url) : null,
+    line_items: lineItems,
+    ...suggestion,
+  };
+
+  let { data: expense, error } = await supabase
     .from("expenses")
-    .insert({
-      expense_date: body.expense_date || new Date().toISOString().slice(0, 10),
-      vendor,
-      description: body.description ? String(body.description) : null,
-      amount,
-      category,
-      payer,
-      expense_type,
-      receipt_url: body.receipt_url ? String(body.receipt_url) : null,
-      ...suggestion,
-    })
+    .insert(row)
     .select()
     .single();
+
+  // Fallback if the line_items column isn't present (migration not applied).
+  if (error && /line_items/i.test(error.message)) {
+    const { line_items: _omit, ...withoutItems } = row;
+    void _omit;
+    ({ data: expense, error } = await supabase
+      .from("expenses")
+      .insert(withoutItems)
+      .select()
+      .single());
+  }
 
   if (error || !expense)
     return NextResponse.json(

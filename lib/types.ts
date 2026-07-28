@@ -57,6 +57,13 @@ export type SaleItem = {
   is_bundle_split: boolean;
 };
 
+export type LineItem = {
+  description: string;
+  quantity: number;
+  unit_price: number;
+  amount: number;
+};
+
 export type Expense = {
   id: string;
   user_id: string | null;
@@ -65,6 +72,7 @@ export type Expense = {
   vendor: string;
   description: string | null;
   amount: number;
+  line_items?: LineItem[];
   category: string;
   payer: string;
   expense_type: string;

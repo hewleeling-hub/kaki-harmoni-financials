@@ -9,7 +9,7 @@ import {
   EXPENSE_TYPES,
   REIMBURSABLE_PAYERS,
 } from "@/lib/constants";
-import { today } from "@/lib/format";
+import { today, rm } from "@/lib/format";
 
 // Category options depend on the expense type: expense categories vs asset classes.
 function categoryOptionsFor(type: string): readonly string[] {
@@ -33,6 +33,32 @@ export function ExpenseForm() {
   const [scanNote, setScanNote] = useState<string | null>(null);
   const [receiptPath, setReceiptPath] = useState<string | null>(null);
   const [customCategory, setCustomCategory] = useState("");
+  type LineDraft = {
+    description: string;
+    quantity: string;
+    unit_price: string;
+    amount: string;
+  };
+  const [lineItems, setLineItems] = useState<LineDraft[]>([]);
+
+  function updateLine(i: number, field: keyof LineDraft, value: string) {
+    setLineItems((items) =>
+      items.map((li, idx) => (idx === i ? { ...li, [field]: value } : li)),
+    );
+  }
+  function addLine() {
+    setLineItems((items) => [
+      ...items,
+      { description: "", quantity: "1", unit_price: "", amount: "" },
+    ]);
+  }
+  function removeLine(i: number) {
+    setLineItems((items) => items.filter((_, idx) => idx !== i));
+  }
+  const lineItemsTotal = lineItems.reduce(
+    (a, li) => a + (Number(li.amount) || 0),
+    0,
+  );
 
   // When "Other" is picked, the typed label becomes the category (stored as
   // free text). Common ones can be promoted into EXPENSE_CATEGORIES later.
@@ -121,10 +147,27 @@ export function ExpenseForm() {
         expense_type: type,
       }));
       setCustomCategory("");
+      if (Array.isArray(f.line_items) && f.line_items.length) {
+        setLineItems(
+          f.line_items.map(
+            (li: {
+              description?: string;
+              quantity?: number;
+              unit_price?: number;
+              amount?: number;
+            }) => ({
+              description: li.description ?? "",
+              quantity: li.quantity != null ? String(li.quantity) : "1",
+              unit_price: li.unit_price != null ? String(li.unit_price) : "",
+              amount: li.amount != null ? String(li.amount) : "",
+            }),
+          ),
+        );
+      }
       setScanNote(
         type === "fixed_asset"
           ? "Scanned as a fixed asset — pick the asset class below, then save."
-          : "Scanned — please review the details below before saving.",
+          : "Scanned — please review the details and line items below before saving.",
       );
     } catch {
       setError("Could not read that file. Enter the details manually.");
@@ -149,6 +192,14 @@ export function ExpenseForm() {
         category: effectiveCategory(),
         amount: amt,
         receipt_url: receiptPath,
+        line_items: lineItems
+          .filter((li) => li.description.trim())
+          .map((li) => ({
+            description: li.description.trim(),
+            quantity: Number(li.quantity) || 0,
+            unit_price: Number(li.unit_price) || 0,
+            amount: Number(li.amount) || 0,
+          })),
       }),
     });
     setBusy(false);
@@ -336,6 +387,83 @@ export function ExpenseForm() {
               ))}
             </select>
           </label>
+        </div>
+
+        <div>
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-sm text-neutral-600">Line items (optional)</span>
+            <button
+              type="button"
+              onClick={addLine}
+              className="text-xs font-medium text-emerald-700 hover:underline"
+            >
+              + Add line
+            </button>
+          </div>
+          {lineItems.length === 0 ? (
+            <p className="text-xs text-neutral-400">
+              Scan a receipt to itemise automatically, or add lines manually.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs text-neutral-400">
+                <span className="flex-1">Item</span>
+                <span className="w-14 text-center">Qty</span>
+                <span className="w-20 text-center">Unit</span>
+                <span className="w-24 text-center">Amount</span>
+                <span className="w-4" />
+              </div>
+              {lineItems.map((li, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    value={li.description}
+                    onChange={(e) => updateLine(i, "description", e.target.value)}
+                    placeholder="Item"
+                    className="min-w-0 flex-1 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={li.quantity}
+                    onChange={(e) => updateLine(i, "quantity", e.target.value)}
+                    className="w-14 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={li.unit_price}
+                    onChange={(e) => updateLine(i, "unit_price", e.target.value)}
+                    className="w-20 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={li.amount}
+                    onChange={(e) => updateLine(i, "amount", e.target.value)}
+                    className="w-24 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeLine(i)}
+                    className="w-4 text-neutral-400 hover:text-red-600"
+                    title="Remove line"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+              <div className="text-right text-xs text-neutral-500">
+                Items total: <strong>{rm(lineItemsTotal)}</strong>
+                {form.amount &&
+                  Math.abs(lineItemsTotal - (Number(form.amount) || 0)) > 0.01 && (
+                    <span className="text-amber-600">
+                      {" "}
+                      · expense total {rm(Number(form.amount))}
+                    </span>
+                  )}
+              </div>
+            </div>
+          )}
         </div>
 
         {willReimburse && (

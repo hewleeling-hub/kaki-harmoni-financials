@@ -38,6 +38,22 @@ const EXTRACTION_SCHEMA = {
       description:
         "fixed_asset for durable equipment (spa machines, furniture, computers, printers); otherwise expense",
     },
+    line_items: {
+      type: "array",
+      description:
+        "Each individual line on the receipt. Empty array if the receipt has no itemised lines.",
+      items: {
+        type: "object",
+        properties: {
+          description: { type: "string", description: "Item name/description" },
+          quantity: { type: "number", description: "Quantity; 1 if not shown" },
+          unit_price: { type: "number", description: "Price per unit; 0 if not shown" },
+          amount: { type: "number", description: "Line total for this item" },
+        },
+        required: ["description", "quantity", "unit_price", "amount"],
+        additionalProperties: false,
+      },
+    },
     category: {
       type: "string",
       enum: ALL_CATEGORIES,
@@ -45,7 +61,15 @@ const EXTRACTION_SCHEMA = {
         "If expense_type is fixed_asset, the asset class (kitchen_equipment, spa_machine, furniture_and_fittings, electrical_equipment, office_equipment, computer, printer). Otherwise the best-fit expense category (supplies, cost_of_goods, maintenance, utilities, rent, equipment, marketing, wages, transport, petrol, toll, meals).",
     },
   },
-  required: ["vendor", "amount", "expense_date", "description", "category", "expense_type"],
+  required: [
+    "vendor",
+    "amount",
+    "expense_date",
+    "description",
+    "category",
+    "expense_type",
+    "line_items",
+  ],
   additionalProperties: false,
 } as const;
 
@@ -118,7 +142,7 @@ export async function POST(req: Request) {
             fileBlock,
             {
               type: "text",
-              text: "This is a business expense receipt for a foot-spa café. Extract the vendor, grand total amount, date, a short description of what was purchased, the best-fit category, and whether it is an expense or a fixed asset. If a field is not visible, use a sensible default (empty string for date, 'other' for category).",
+              text: "This is a business expense receipt for a foot-spa café. Extract the vendor, grand total amount, date, a short description of what was purchased, the best-fit category, whether it is an expense or a fixed asset, and each individual line item (description, quantity, unit price, line amount). If a field is not visible, use a sensible default (empty string for date, 'other' for category, [] for line_items).",
             },
           ],
         },

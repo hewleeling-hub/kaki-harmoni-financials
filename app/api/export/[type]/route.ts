@@ -81,12 +81,30 @@ export async function GET(
       Payer: payerLabel(e.payer),
       Type: String(e.expense_type).replace(/_/g, " "),
       "Amount (RM)": Number(e.amount),
+      Items: Array.isArray(e.line_items) ? e.line_items.length : 0,
       Settled: e.is_settled ? "Yes" : "No",
       "AI Category": e.ai_category ?? "",
       Receipt: receiptLink(e.receipt_url),
     }));
+    // Flatten line items into their own sheet, one row per item.
+    const itemRows: Record<string, unknown>[] = [];
+    for (const e of data ?? []) {
+      for (const li of Array.isArray(e.line_items) ? e.line_items : []) {
+        itemRows.push({
+          Date: e.expense_date,
+          Vendor: e.vendor,
+          Item: li.description ?? "",
+          Qty: Number(li.quantity) || 0,
+          "Unit Price (RM)": Number(li.unit_price) || 0,
+          "Amount (RM)": Number(li.amount) || 0,
+        });
+      }
+    }
     return workbookResponse(
-      [{ name: "Expenses", rows }],
+      [
+        { name: "Expenses", rows },
+        { name: "Line Items", rows: itemRows },
+      ],
       `kaki-harmoni-expenses-${stamp}.xlsx`,
     );
   }

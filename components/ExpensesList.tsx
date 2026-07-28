@@ -130,6 +130,19 @@ export function ExpensesList() {
                         {e.description}
                       </div>
                     )}
+                    {e.line_items && e.line_items.length > 0 && (
+                      <ul className="mt-1 space-y-0.5 border-l-2 border-neutral-100 pl-2 text-xs text-neutral-500">
+                        {e.line_items.map((li, i) => (
+                          <li key={i} className="flex justify-between gap-3">
+                            <span>
+                              {li.quantity > 1 ? `${li.quantity}× ` : ""}
+                              {li.description}
+                            </span>
+                            <span className="tabular-nums">{rm(li.amount)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </td>
                   <td className="px-4 py-3 capitalize text-neutral-600">
                     {e.category.replace(/_/g, " ")}
