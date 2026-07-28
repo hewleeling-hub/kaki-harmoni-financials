@@ -11,6 +11,8 @@ export function ExpensesList() {
   const [expenses, setExpenses] = useState<Expense[] | null>(null);
   const [payerFilter, setPayerFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [yearFilter, setYearFilter] = useState("all");
+  const [monthFilter, setMonthFilter] = useState("all");
 
   useEffect(() => {
     fetch("/api/expenses", { cache: "no-store" })
@@ -23,9 +25,35 @@ export function ExpensesList() {
     return expenses.filter(
       (e) =>
         (payerFilter === "all" || e.payer === payerFilter) &&
-        (typeFilter === "all" || e.expense_type === typeFilter),
+        (typeFilter === "all" || e.expense_type === typeFilter) &&
+        (yearFilter === "all" || String(e.expense_date).slice(0, 4) === yearFilter) &&
+        (monthFilter === "all" ||
+          String(e.expense_date).slice(5, 7) === monthFilter),
     );
-  }, [expenses, payerFilter, typeFilter]);
+  }, [expenses, payerFilter, typeFilter, yearFilter, monthFilter]);
+
+  // Distinct years present in the data (newest first), for the year dropdown.
+  const years = useMemo(() => {
+    const set = new Set(
+      (expenses ?? []).map((e) => String(e.expense_date).slice(0, 4)),
+    );
+    return [...set].filter(Boolean).sort((a, b) => b.localeCompare(a));
+  }, [expenses]);
+
+  const MONTHS = [
+    ["01", "Jan"],
+    ["02", "Feb"],
+    ["03", "Mar"],
+    ["04", "Apr"],
+    ["05", "May"],
+    ["06", "Jun"],
+    ["07", "Jul"],
+    ["08", "Aug"],
+    ["09", "Sep"],
+    ["10", "Oct"],
+    ["11", "Nov"],
+    ["12", "Dec"],
+  ];
 
   const total = filtered.reduce((a, e) => a + Number(e.amount), 0);
 
@@ -69,6 +97,30 @@ export function ExpensesList() {
             </option>
           ))}
         </select>
+        <select
+          value={monthFilter}
+          onChange={(e) => setMonthFilter(e.target.value)}
+          className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        >
+          <option value="all">All months</option>
+          {MONTHS.map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+        <select
+          value={yearFilter}
+          onChange={(e) => setYearFilter(e.target.value)}
+          className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        >
+          <option value="all">All years</option>
+          {years.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
         <span className="ml-auto self-center text-sm text-neutral-500">
           {filtered.length} rows · {rm(total)}
         </span>
@@ -78,14 +130,20 @@ export function ExpensesList() {
         <p className="text-neutral-500">Loading…</p>
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-neutral-500">
-          No expenses recorded.{" "}
-          <Link
-            href="/expenses/new"
-            className="font-medium text-emerald-700 underline"
-          >
-            Add one
-          </Link>
-          .
+          {expenses.length === 0 ? (
+            <>
+              No expenses recorded.{" "}
+              <Link
+                href="/expenses/new"
+                className="font-medium text-emerald-700 underline"
+              >
+                Add one
+              </Link>
+              .
+            </>
+          ) : (
+            "No expenses match these filters."
+          )}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
