@@ -10,37 +10,57 @@ import {
   REIMBURSABLE_PAYERS,
 } from "@/lib/constants";
 import { today, rm } from "@/lib/format";
+import type { Expense } from "@/lib/types";
 
 // Category options depend on the expense type: expense categories vs asset classes.
 function categoryOptionsFor(type: string): readonly string[] {
   return type === "fixed_asset" ? ASSET_CATEGORIES : EXPENSE_CATEGORIES;
 }
 
-export function ExpenseForm() {
+export function ExpenseForm({ initial }: { initial?: Expense }) {
   const router = useRouter();
+  const editing = !!initial;
+
+  const initType = initial?.expense_type ?? "expense";
+  const initCatCustom = initial
+    ? !categoryOptionsFor(initType).includes(initial.category)
+    : false;
+
   const [form, setForm] = useState({
-    vendor: "",
-    description: "",
-    amount: "",
-    expense_date: today(),
-    category: "supplies",
-    payer: "company",
-    expense_type: "expense",
-    comments: "",
+    vendor: initial?.vendor ?? "",
+    description: initial?.description ?? "",
+    amount: initial ? String(initial.amount) : "",
+    expense_date: initial?.expense_date ?? today(),
+    category: initial ? (initCatCustom ? "other" : initial.category) : "supplies",
+    payer: initial?.payer ?? "company",
+    expense_type: initType,
+    comments: initial?.comments ?? "",
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanNote, setScanNote] = useState<string | null>(null);
-  const [receiptPath, setReceiptPath] = useState<string | null>(null);
-  const [customCategory, setCustomCategory] = useState("");
+  const [receiptPath, setReceiptPath] = useState<string | null>(
+    initial?.receipt_url ?? null,
+  );
+  const [customCategory, setCustomCategory] = useState(
+    initCatCustom && initial ? initial.category : "",
+  );
   type LineDraft = {
     description: string;
     quantity: string;
     unit_price: string;
     amount: string;
   };
-  const [lineItems, setLineItems] = useState<LineDraft[]>([]);
+  const [lineItems, setLineItems] = useState<LineDraft[]>(
+    (initial?.line_items ?? []).map((li) => ({
+      description: li.description,
+      quantity: String(li.quantity),
+      unit_price: String(li.unit_price),
+      amount: String(li.amount),
+    })),
+  );
 
   function updateLine(i: number, field: keyof LineDraft, value: string) {
     setLineItems((items) =>
@@ -185,24 +205,27 @@ export function ExpenseForm() {
     if (!amt || amt <= 0) return setError("Amount must be greater than zero");
 
     setBusy(true);
-    const res = await fetch("/api/expenses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        category: effectiveCategory(),
-        amount: amt,
-        receipt_url: receiptPath,
-        line_items: lineItems
-          .filter((li) => li.description.trim())
-          .map((li) => ({
-            description: li.description.trim(),
-            quantity: Number(li.quantity) || 0,
-            unit_price: Number(li.unit_price) || 0,
-            amount: Number(li.amount) || 0,
-          })),
-      }),
-    });
+    const res = await fetch(
+      editing ? `/api/expenses/${initial!.id}` : "/api/expenses",
+      {
+        method: editing ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          category: effectiveCategory(),
+          amount: amt,
+          receipt_url: receiptPath,
+          line_items: lineItems
+            .filter((li) => li.description.trim())
+            .map((li) => ({
+              description: li.description.trim(),
+              quantity: Number(li.quantity) || 0,
+              unit_price: Number(li.unit_price) || 0,
+              amount: Number(li.amount) || 0,
+            })),
+        }),
+      },
+    );
     setBusy(false);
     if (!res.ok) {
       const j = await res.json().catch(() => ({}));
@@ -212,9 +235,25 @@ export function ExpenseForm() {
     router.refresh();
   }
 
+  async function remove() {
+    if (!editing) return;
+    if (!confirm("Delete this purchase? This also removes any linked reimbursement.")) return;
+    setDeleting(true);
+    const res = await fetch(`/api/expenses/${initial!.id}`, { method: "DELETE" });
+    setDeleting(false);
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      return setError(j.error || "Delete failed");
+    }
+    router.push("/expenses");
+    router.refresh();
+  }
+
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="mb-4 text-2xl font-bold tracking-tight">New Purchase</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight">
+        {editing ? "Edit Purchase" : "New Purchase"}
+      </h1>
       <div className="mb-4 rounded-2xl border border-dashed border-emerald-300 bg-emerald-50 p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -492,13 +531,13 @@ export function ExpenseForm() {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="submit"
-            disabled={busy}
+            disabled={busy || deleting}
             className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
-            {busy ? "Saving…" : "Save purchase"}
+            {busy ? "Saving…" : editing ? "Save changes" : "Save purchase"}
           </button>
           <a
             href="/expenses"
@@ -506,6 +545,16 @@ export function ExpenseForm() {
           >
             Cancel
           </a>
+          {editing && (
+            <button
+              type="button"
+              onClick={remove}
+              disabled={busy || deleting}
+              className="ml-auto rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </button>
+          )}
         </div>
       </form>
     </div>

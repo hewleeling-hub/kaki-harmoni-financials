@@ -195,6 +195,7 @@ export function ExpensesList() {
                 <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 text-right font-medium">Amount</th>
+                <th className="px-4 py-3 font-medium"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
@@ -275,6 +276,14 @@ export function ExpensesList() {
                   </td>
                   <td className="px-4 py-3 text-right font-semibold">
                     {rm(e.amount)}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      href={`/expenses/${e.id}/edit`}
+                      className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50"
+                    >
+                      Edit
+                    </Link>
                   </td>
                 </tr>
               ))}
