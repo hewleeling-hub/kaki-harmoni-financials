@@ -4,11 +4,17 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   EXPENSE_CATEGORIES,
+  ASSET_CATEGORIES,
   PAYERS,
   EXPENSE_TYPES,
   REIMBURSABLE_PAYERS,
 } from "@/lib/constants";
 import { today } from "@/lib/format";
+
+// Category options depend on the expense type: expense categories vs asset classes.
+function categoryOptionsFor(type: string): readonly string[] {
+  return type === "fixed_asset" ? ASSET_CATEGORIES : EXPENSE_CATEGORIES;
+}
 
 export function ExpenseForm() {
   const router = useRouter();
@@ -97,19 +103,29 @@ export function ExpenseForm() {
         return;
       }
       const f = j.fields || {};
+      const type =
+        f.expense_type === "fixed_asset" || f.expense_type === "expense"
+          ? f.expense_type
+          : form.expense_type;
+      // Keep the category valid for the resulting type's option set; for a
+      // fixed asset the OCR's expense category won't match, so fall back to "Other".
+      const opts = categoryOptionsFor(type);
+      const category = opts.includes(f.category) ? f.category : "other";
       setForm((prev) => ({
         ...prev,
         vendor: f.vendor || prev.vendor,
         description: f.description || prev.description,
         amount: f.amount ? String(f.amount) : prev.amount,
         expense_date: f.expense_date || prev.expense_date,
-        category: EXPENSE_CATEGORIES.includes(f.category) ? f.category : prev.category,
-        expense_type:
-          f.expense_type === "fixed_asset" || f.expense_type === "expense"
-            ? f.expense_type
-            : prev.expense_type,
+        category,
+        expense_type: type,
       }));
-      setScanNote("Scanned — please review the details below before saving.");
+      setCustomCategory("");
+      setScanNote(
+        type === "fixed_asset"
+          ? "Scanned as a fixed asset — pick the asset class below, then save."
+          : "Scanned — please review the details below before saving.",
+      );
     } catch {
       setError("Could not read that file. Enter the details manually.");
     } finally {
@@ -241,13 +257,15 @@ export function ExpenseForm() {
         </div>
 
         <label className="block text-sm">
-          <span className="mb-1 block text-neutral-600">Category</span>
+          <span className="mb-1 block text-neutral-600">
+            {form.expense_type === "fixed_asset" ? "Asset class" : "Category"}
+          </span>
           <select
             value={form.category}
             onChange={(e) => set("category", e.target.value)}
             className="w-full rounded-lg border border-neutral-300 px-3 py-2 capitalize"
           >
-            {EXPENSE_CATEGORIES.map((c) => (
+            {categoryOptionsFor(form.expense_type).map((c) => (
               <option key={c} value={c} className="capitalize">
                 {c.replace(/_/g, " ")}
               </option>
@@ -258,13 +276,19 @@ export function ExpenseForm() {
         {form.category === "other" && (
           <label className="block text-sm">
             <span className="mb-1 block text-neutral-600">
-              Custom category (optional)
+              {form.expense_type === "fixed_asset"
+                ? "Custom asset class (optional)"
+                : "Custom category (optional)"}
             </span>
             <input
               value={customCategory}
               onChange={(e) => setCustomCategory(e.target.value)}
               maxLength={50}
-              placeholder="e.g. furniture, marketing, wages, transport"
+              placeholder={
+                form.expense_type === "fixed_asset"
+                  ? "e.g. signage, water tank, sound system"
+                  : "e.g. insurance, licenses, cleaning"
+              }
               className="w-full rounded-lg border border-neutral-300 px-3 py-2"
             />
             <span className="mt-1 block text-xs text-neutral-400">
@@ -292,7 +316,17 @@ export function ExpenseForm() {
             <span className="mb-1 block text-neutral-600">Type</span>
             <select
               value={form.expense_type}
-              onChange={(e) => set("expense_type", e.target.value)}
+              onChange={(e) => {
+                const type = e.target.value;
+                // Switch the category set and reset to its first option so the
+                // stored category always matches the type (expense vs asset).
+                setForm((f) => ({
+                  ...f,
+                  expense_type: type,
+                  category: categoryOptionsFor(type)[0],
+                }));
+                setCustomCategory("");
+              }}
               className="w-full rounded-lg border border-neutral-300 px-3 py-2"
             >
               {EXPENSE_TYPES.map((t) => (

@@ -44,6 +44,19 @@ export const EXPENSE_TYPES = [
   { value: "fixed_asset", label: "Fixed Asset" },
 ] as const;
 
+// Asset classes shown as the "category" when the type is Fixed Asset. Stored in
+// the same category text column; "Other" allows a custom class.
+export const ASSET_CATEGORIES = [
+  "kitchen_equipment",
+  "spa_machine",
+  "furniture_and_fittings",
+  "electrical_equipment",
+  "office_equipment",
+  "computer",
+  "printer",
+  "other",
+] as const;
+
 export const PRODUCT_CATEGORIES = ["spa", "coffee", "food", "retail"] as const;
 
 // Payers that create a reimbursement (money fronted by a person, owed back).

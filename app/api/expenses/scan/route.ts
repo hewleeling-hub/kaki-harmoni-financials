@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { EXPENSE_CATEGORIES } from "@/lib/constants";
+import { EXPENSE_CATEGORIES, ASSET_CATEGORIES } from "@/lib/constants";
+
+// Expense categories + fixed-asset classes (deduped) — the model picks the one
+// matching expense_type.
+const ALL_CATEGORIES = Array.from(
+  new Set<string>([...EXPENSE_CATEGORIES, ...ASSET_CATEGORIES]),
+);
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -26,15 +32,17 @@ const EXTRACTION_SCHEMA = {
       type: "string",
       description: "Short summary of what was bought (a few words)",
     },
-    category: {
-      type: "string",
-      enum: [...EXPENSE_CATEGORIES],
-      description: "Best-fit expense category",
-    },
     expense_type: {
       type: "string",
       enum: ["expense", "fixed_asset"],
-      description: "fixed_asset for durable equipment (machines, furniture); otherwise expense",
+      description:
+        "fixed_asset for durable equipment (spa machines, furniture, computers, printers); otherwise expense",
+    },
+    category: {
+      type: "string",
+      enum: ALL_CATEGORIES,
+      description:
+        "If expense_type is fixed_asset, the asset class (kitchen_equipment, spa_machine, furniture_and_fittings, electrical_equipment, office_equipment, computer, printer). Otherwise the best-fit expense category (supplies, cost_of_goods, maintenance, utilities, rent, equipment, marketing, wages, transport).",
     },
   },
   required: ["vendor", "amount", "expense_date", "description", "category", "expense_type"],
