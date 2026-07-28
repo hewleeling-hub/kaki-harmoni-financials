@@ -19,7 +19,13 @@ function occColor(p: number) {
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string; date?: string; month?: string }>;
+  searchParams: Promise<{
+    period?: string;
+    date?: string;
+    month?: string;
+    start?: string;
+    end?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const range = reportRange(sp);
@@ -37,15 +43,21 @@ export default async function ReportsPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            {range.period === "month" ? "Monthly Report" : "End-of-Day Report"}
+            {range.period === "month"
+              ? "Monthly Report"
+              : range.period === "range"
+                ? "Report"
+                : "End-of-Day Report"}
           </h1>
           <p className="text-sm text-neutral-500">{r.label}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <ReportControls
             period={range.period}
             date={sp.date || today()}
             month={sp.month || today().slice(0, 7)}
+            start={sp.start || today()}
+            end={sp.end || today()}
           />
           <ExportButton
             type="report"
@@ -53,6 +65,8 @@ export default async function ReportsPage({
               period: range.period,
               date: sp.date,
               month: sp.month,
+              start: sp.start,
+              end: sp.end,
             }}
           />
         </div>

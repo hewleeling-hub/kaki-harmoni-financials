@@ -9,7 +9,13 @@ export const dynamic = "force-dynamic";
 export default async function SalesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ period?: string; date?: string; month?: string }>;
+  searchParams: Promise<{
+    period?: string;
+    date?: string;
+    month?: string;
+    start?: string;
+    end?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const range = reportRange(sp);
@@ -34,11 +40,19 @@ export default async function SalesPage({
             period={range.period}
             date={sp.date || today()}
             month={sp.month || today().slice(0, 7)}
+            start={sp.start || today()}
+            end={sp.end || today()}
             basePath="/sales"
           />
           <ExportButton
             type="sales"
-            params={{ period: range.period, date: sp.date, month: sp.month }}
+            params={{
+              period: range.period,
+              date: sp.date,
+              month: sp.month,
+              start: sp.start,
+              end: sp.end,
+            }}
           />
         </div>
       </div>
@@ -80,7 +94,7 @@ export default async function SalesPage({
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td className="whitespace-nowrap px-4 py-3 text-neutral-600">
-                    {range.period === "month" ? `${r.sale_date} · ` : ""}
+                    {range.start !== range.end ? `${r.sale_date} · ` : ""}
                     {timeOfDay(r.created_at)}
                   </td>
                   <td className="px-4 py-3">

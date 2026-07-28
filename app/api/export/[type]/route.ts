@@ -199,6 +199,8 @@ export async function GET(
       period: url.searchParams.get("period") || undefined,
       date: url.searchParams.get("date") || undefined,
       month: url.searchParams.get("month") || undefined,
+      start: url.searchParams.get("start") || undefined,
+      end: url.searchParams.get("end") || undefined,
     });
     const ledger = await getSalesLedger(range.start, range.end);
     const rows = ledger.map((r) => ({
@@ -211,7 +213,11 @@ export async function GET(
       "Total (RM)": r.total,
     }));
     const suffix =
-      range.period === "month" ? range.start.slice(0, 7) : range.start;
+      range.period === "month"
+        ? range.start.slice(0, 7)
+        : range.start === range.end
+          ? range.start
+          : `${range.start}_to_${range.end}`;
     return workbookResponse(
       [{ name: "Sales", rows }],
       `kaki-harmoni-sales-${suffix}.xlsx`,
@@ -223,6 +229,8 @@ export async function GET(
       period: url.searchParams.get("period") || undefined,
       date: url.searchParams.get("date") || undefined,
       month: url.searchParams.get("month") || undefined,
+      start: url.searchParams.get("start") || undefined,
+      end: url.searchParams.get("end") || undefined,
     });
     const r = await computeReport(
       range.start,
@@ -273,7 +281,11 @@ export async function GET(
       return row;
     });
     const suffix =
-      range.period === "month" ? range.start.slice(0, 7) : range.start;
+      range.period === "month"
+        ? range.start.slice(0, 7)
+        : range.start === range.end
+          ? range.start
+          : `${range.start}_to_${range.end}`;
     return workbookResponse(
       [
         { name: "Summary", rows: summary },

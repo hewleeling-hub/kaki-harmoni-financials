@@ -11,10 +11,12 @@ export type RevenueGroup = {
 
 export type OccupancyCell = { chairId: string; hour: number; pct: number };
 
+export type ReportPeriod = "day" | "month" | "range";
+
 export type DailyReport = {
   start: string;
   end: string;
-  period: "day" | "month";
+  period: ReportPeriod;
   label: string;
   days: number;
   inflow: number;
@@ -29,12 +31,24 @@ export type DailyReport = {
   outstandingReimbursements: { count: number; total: number };
 };
 
+function dayLabel(d: string): string {
+  return new Date(`${d}T12:00:00+08:00`).toLocaleDateString("en-MY", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kuala_Lumpur",
+  });
+}
+
 // Resolve URL params into a concrete date range + label.
 export function reportRange(params: {
   period?: string;
   date?: string;
   month?: string;
-}): { period: "day" | "month"; start: string; end: string; label: string } {
+  start?: string;
+  end?: string;
+}): { period: ReportPeriod; start: string; end: string; label: string } {
   if (params.period === "month") {
     const month = params.month || today().slice(0, 7); // YYYY-MM
     const [y, m] = month.split("-").map(Number);
@@ -47,15 +61,16 @@ export function reportRange(params: {
     );
     return { period: "month", start, end, label };
   }
+  if (params.period === "range") {
+    let start = params.start || today();
+    let end = params.end || start;
+    if (start > end) [start, end] = [end, start]; // tolerate reversed inputs
+    const label =
+      start === end ? dayLabel(start) : `${dayLabel(start)} → ${dayLabel(end)}`;
+    return { period: "range", start, end, label };
+  }
   const date = params.date || today();
-  const label = new Date(`${date}T12:00:00+08:00`).toLocaleDateString("en-MY", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    timeZone: "Asia/Kuala_Lumpur",
-  });
-  return { period: "day", start: date, end: date, label };
+  return { period: "day", start: date, end: date, label: dayLabel(date) };
 }
 
 function overlapMinutes(
@@ -86,7 +101,7 @@ function group(items: SaleItem[]): RevenueGroup {
 export async function computeReport(
   startStr: string,
   endStr: string = startStr,
-  period: "day" | "month" = "day",
+  period: ReportPeriod = "day",
   label?: string,
 ): Promise<DailyReport> {
   const supabase = createAdminClient();
