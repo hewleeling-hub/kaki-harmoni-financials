@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { today } from "@/lib/format";
+import { today, gmt8Date } from "@/lib/format";
 import { OPEN_HOUR, CLOSE_HOUR } from "@/lib/constants";
 import type { Sale, SaleItem, Expense, Session, Chair, Product } from "@/lib/types";
 
@@ -41,18 +41,19 @@ export function reportRange(params: {
     const start = `${month}-01`;
     const lastDay = new Date(y, m, 0).getDate();
     const end = `${month}-${String(lastDay).padStart(2, "0")}`;
-    const label = new Date(`${start}T00:00:00`).toLocaleDateString("en-MY", {
-      month: "long",
-      year: "numeric",
-    });
+    const label = new Date(`${start}T12:00:00+08:00`).toLocaleDateString(
+      "en-MY",
+      { month: "long", year: "numeric", timeZone: "Asia/Kuala_Lumpur" },
+    );
     return { period: "month", start, end, label };
   }
   const date = params.date || today();
-  const label = new Date(`${date}T00:00:00`).toLocaleDateString("en-MY", {
+  const label = new Date(`${date}T12:00:00+08:00`).toLocaleDateString("en-MY", {
     weekday: "short",
     day: "2-digit",
     month: "short",
     year: "numeric",
+    timeZone: "Asia/Kuala_Lumpur",
   });
   return { period: "day", start: date, end: date, label };
 }
@@ -81,12 +82,6 @@ function group(items: SaleItem[]): RevenueGroup {
   };
 }
 
-function localDate(iso: string): string {
-  const d = new Date(iso);
-  const off = d.getTimezoneOffset();
-  return new Date(d.getTime() - off * 60_000).toISOString().slice(0, 10);
-}
-
 // Aggregate over an inclusive [startStr, endStr] date range (both YYYY-MM-DD).
 export async function computeReport(
   startStr: string,
@@ -95,13 +90,13 @@ export async function computeReport(
   label?: string,
 ): Promise<DailyReport> {
   const supabase = createAdminClient();
-  const startISO = new Date(`${startStr}T00:00:00`).toISOString();
-  const endMs = new Date(`${endStr}T00:00:00`).getTime() + 24 * 60 * 60_000;
+  const startISO = new Date(`${startStr}T00:00:00+08:00`).toISOString();
+  const endMs = new Date(`${endStr}T00:00:00+08:00`).getTime() + 24 * 60 * 60_000;
   const endISO = new Date(endMs).toISOString();
   const days =
     Math.round(
-      (new Date(`${endStr}T00:00:00`).getTime() -
-        new Date(`${startStr}T00:00:00`).getTime()) /
+      (new Date(`${endStr}T00:00:00+08:00`).getTime() -
+        new Date(`${startStr}T00:00:00+08:00`).getTime()) /
         86_400_000,
     ) + 1;
 
@@ -173,12 +168,12 @@ export async function computeReport(
   for (const s of sessions) {
     const arr = minutesByChairHour.get(s.chair_id);
     if (!arr) continue;
-    const dateStr = localDate(s.started_at);
+    const dateStr = gmt8Date(s.started_at);
     const start = new Date(s.started_at).getTime();
     const end = s.rest_ends_at ? new Date(s.rest_ends_at).getTime() : start;
     hours.forEach((h, idx) => {
       const hourStart =
-        new Date(`${dateStr}T00:00:00`).getTime() + h * 3_600_000;
+        new Date(`${dateStr}T00:00:00+08:00`).getTime() + h * 3_600_000;
       arr[idx] += overlapMinutes(start, end, hourStart, hourStart + 3_600_000);
     });
   }

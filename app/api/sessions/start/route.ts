@@ -10,6 +10,7 @@ import {
   REST_MINUTES,
   PAYMENT_METHODS,
 } from "@/lib/constants";
+import { gmt8Date } from "@/lib/format";
 import type { Product } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -121,7 +122,7 @@ export async function POST(req: Request) {
     .from("sales")
     .insert({
       session_id: session.id,
-      sale_date: startedAt.toISOString().slice(0, 10),
+      sale_date: gmt8Date(startedAt),
       payment_method,
       total_amount: total,
       is_bundle: true,

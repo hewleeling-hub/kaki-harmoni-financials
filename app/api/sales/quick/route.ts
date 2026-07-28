@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PAYMENT_METHODS } from "@/lib/constants";
+import { today } from "@/lib/format";
 import type { Product } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -80,7 +81,7 @@ export async function POST(req: Request) {
     .from("sales")
     .insert({
       session_id: null,
-      sale_date: new Date().toISOString().slice(0, 10),
+      sale_date: today(),
       payment_method: body.payment_method,
       total_amount: total,
       is_bundle: false,

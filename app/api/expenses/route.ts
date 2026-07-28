@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { PAYERS, EXPENSE_TYPES, REIMBURSABLE_PAYERS } from "@/lib/constants";
 import { suggestExpenseCategory } from "@/lib/aiCategory";
+import { today } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
     : [];
 
   const row = {
-    expense_date: body.expense_date || new Date().toISOString().slice(0, 10),
+    expense_date: body.expense_date || today(),
     vendor,
     description: body.description ? String(body.description) : null,
     amount,

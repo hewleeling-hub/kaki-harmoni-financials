@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeReport, reportRange } from "@/lib/reports";
 import { getSalesLedger } from "@/lib/sales";
-import { dayBounds, today, timeOfDay } from "@/lib/format";
+import { dayBounds, today, timeOfDay, gmt8Date } from "@/lib/format";
 import { PAYERS } from "@/lib/constants";
 import type { Session, Sale, Chair } from "@/lib/types";
 
@@ -139,8 +139,8 @@ export async function GET(
         Vendor: e?.vendor ?? "",
         "Amount (RM)": Number(r.amount),
         Status: r.is_settled ? "Settled" : "Outstanding",
-        Created: String(r.created_at).slice(0, 10),
-        "Settled At": r.settled_at ? String(r.settled_at).slice(0, 10) : "",
+        Created: gmt8Date(r.created_at),
+        "Settled At": r.settled_at ? gmt8Date(r.settled_at) : "",
         Receipt: receiptLink(e?.receipt_url),
       };
     });
@@ -182,7 +182,7 @@ export async function GET(
       const sale = salesBySession.get(s.id);
       return {
         Chair: chairById.get(s.chair_id)?.label ?? "",
-        "Started At": String(s.started_at).replace("T", " ").slice(0, 16),
+        "Started At": `${gmt8Date(s.started_at)} ${timeOfDay(s.started_at)}`,
         Status: s.status,
         Payment: sale ? String(sale.payment_method).replace(/_/g, " ") : "",
         "Total (RM)": sale ? Number(sale.total_amount) : 0,
