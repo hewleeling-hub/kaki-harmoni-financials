@@ -78,6 +78,7 @@ export async function GET(
       Date: e.expense_date,
       Vendor: e.vendor,
       Description: e.description ?? "",
+      Comments: e.comments ?? "",
       Category: String(e.category).replace(/_/g, " "),
       Payer: payerLabel(e.payer),
       Type: String(e.expense_type).replace(/_/g, " "),

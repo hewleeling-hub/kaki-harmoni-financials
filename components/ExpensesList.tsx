@@ -240,6 +240,11 @@ export function ExpensesList() {
                         ))}
                       </ul>
                     )}
+                    {e.comments && (
+                      <div className="mt-1 text-xs italic text-neutral-500">
+                        💬 {e.comments}
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 capitalize text-neutral-600">
                     {e.category.replace(/_/g, " ")}

@@ -61,7 +61,7 @@ export async function POST(req: Request) {
         .filter((li: { description: string }) => li.description)
     : [];
 
-  const row = {
+  const row: Record<string, unknown> = {
     expense_date: body.expense_date || today(),
     vendor,
     description: body.description ? String(body.description) : null,
@@ -71,6 +71,7 @@ export async function POST(req: Request) {
     expense_type,
     receipt_url: body.receipt_url ? String(body.receipt_url) : null,
     line_items: lineItems,
+    comments: body.comments ? String(body.comments) : null,
     ...suggestion,
   };
 
@@ -80,15 +81,21 @@ export async function POST(req: Request) {
     .select()
     .single();
 
-  // Fallback if the line_items column isn't present (migration not applied).
-  if (error && /line_items/i.test(error.message)) {
-    const { line_items: _omit, ...withoutItems } = row;
-    void _omit;
-    ({ data: expense, error } = await supabase
-      .from("expenses")
-      .insert(withoutItems)
-      .select()
-      .single());
+  // If an optional column isn't present yet (migration not applied), drop just
+  // the offending field(s) and retry so the core save still works.
+  if (error) {
+    const missing = ["line_items", "comments"].filter((c) =>
+      new RegExp(c, "i").test(error!.message),
+    );
+    if (missing.length) {
+      const retry = { ...row };
+      for (const c of missing) delete retry[c];
+      ({ data: expense, error } = await supabase
+        .from("expenses")
+        .insert(retry)
+        .select()
+        .single());
+    }
   }
 
   if (error || !expense)

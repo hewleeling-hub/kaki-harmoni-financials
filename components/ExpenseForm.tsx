@@ -26,6 +26,7 @@ export function ExpenseForm() {
     category: "supplies",
     payer: "company",
     expense_type: "expense",
+    comments: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -465,6 +466,19 @@ export function ExpenseForm() {
             </div>
           )}
         </div>
+
+        <label className="block text-sm">
+          <span className="mb-1 block text-neutral-600">
+            Comments (optional)
+          </span>
+          <textarea
+            value={form.comments}
+            onChange={(e) => set("comments", e.target.value)}
+            rows={2}
+            placeholder="Who / when / why — e.g. Staff lunch for MG, KY & 2 part-timers, month-end"
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2"
+          />
+        </label>
 
         {willReimburse && (
           <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
