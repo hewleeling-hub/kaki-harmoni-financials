@@ -22,6 +22,7 @@ export const PAYMENT_METHODS = [
 export const EXPENSE_CATEGORIES = [
   "supplies",
   "cost_of_goods",
+  "operating_expenses",
   "maintenance",
   "utilities",
   "rent",

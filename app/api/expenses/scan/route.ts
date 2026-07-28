@@ -58,7 +58,7 @@ const EXTRACTION_SCHEMA = {
       type: "string",
       enum: ALL_CATEGORIES,
       description:
-        "If expense_type is fixed_asset, the asset class (kitchen_equipment, spa_machine, furniture_and_fittings, electrical_equipment, office_equipment, computer, printer). Otherwise the best-fit expense category (supplies, cost_of_goods, maintenance, utilities, rent, equipment, marketing, wages, transport, petrol, toll, meals).",
+        "If expense_type is fixed_asset, the asset class (kitchen_equipment, spa_machine, furniture_and_fittings, electrical_equipment, office_equipment, computer, printer). Otherwise the best-fit expense category (supplies, cost_of_goods, operating_expenses, maintenance, utilities, rent, equipment, marketing, wages, transport, petrol, toll, meals).",
     },
   },
   required: [
