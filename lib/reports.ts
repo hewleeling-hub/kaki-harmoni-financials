@@ -94,15 +94,14 @@ export async function computeReport(dateStr: string): Promise<DailyReport> {
     items = (data ?? []) as SaleItem[];
   }
 
-  const spaItems = items.filter(
-    (i) => i.is_bundle_split && productById.get(i.product_id)?.category === "spa",
+  // Group by product category so both bundle splits and standalone/quick sales
+  // land in the right bucket (spa / coffee / everything else = extras).
+  const cat = (i: SaleItem) => productById.get(i.product_id)?.category;
+  const spaItems = items.filter((i) => cat(i) === "spa");
+  const coffeeItems = items.filter((i) => cat(i) === "coffee");
+  const extraItems = items.filter(
+    (i) => cat(i) !== "spa" && cat(i) !== "coffee",
   );
-  const coffeeItems = items.filter(
-    (i) =>
-      i.is_bundle_split &&
-      productById.get(i.product_id)?.category === "coffee",
-  );
-  const extraItems = items.filter((i) => !i.is_bundle_split);
 
   // Occupancy grid: hours 10–20, per chair, % of each hour a chair was occupied
   // (running or resting = the [started_at, rest_ends_at] window).

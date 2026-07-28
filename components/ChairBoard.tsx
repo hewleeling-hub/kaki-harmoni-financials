@@ -5,6 +5,7 @@ import type { ChairWithSession, Product } from "@/lib/types";
 import { countdown } from "@/lib/format";
 import { SPA_MINUTES, REST_MINUTES } from "@/lib/constants";
 import { StartSessionSheet } from "./StartSessionSheet";
+import { QuickSaleSheet } from "./QuickSaleSheet";
 import { enqueue, flushQueue } from "@/lib/offlineQueue";
 
 type BoardData = { chairs: ChairWithSession[]; extras: Product[] };
@@ -40,6 +41,8 @@ export function ChairBoard() {
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [selected, setSelected] = useState<ChairWithSession | null>(null);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [saleNote, setSaleNote] = useState<string | null>(null);
   const reconciledRef = useRef(false);
 
   // One board GET with a hard timeout so a hung request can't wedge the UI.
@@ -188,12 +191,26 @@ export function ChairBoard() {
 
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Chair Board</h1>
-        <p className="text-sm text-neutral-500">
-          Tap a free chair to ring up a bundle
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="hidden text-sm text-neutral-500 sm:block">
+            Tap a free chair to ring up a bundle
+          </p>
+          <button
+            onClick={() => setQuickOpen(true)}
+            className="rounded-lg border border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
+          >
+            + Quick Sale
+          </button>
+        </div>
       </div>
+
+      {saleNote && (
+        <div className="mb-4 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800">
+          {saleNote}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {data.chairs.map((chair) => {
@@ -247,6 +264,17 @@ export function ChairBoard() {
           extras={data.extras}
           onClose={() => setSelected(null)}
           onSubmit={handleStart}
+        />
+      )}
+
+      {quickOpen && (
+        <QuickSaleSheet
+          onClose={() => setQuickOpen(false)}
+          onDone={() => {
+            setQuickOpen(false);
+            setSaleNote("Quick sale recorded — it's in today's Report.");
+            setTimeout(() => setSaleNote(null), 5000);
+          }}
         />
       )}
     </div>
