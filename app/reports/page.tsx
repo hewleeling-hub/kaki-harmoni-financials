@@ -1,6 +1,6 @@
-import { computeReport } from "@/lib/reports";
+import { computeReport, reportRange } from "@/lib/reports";
 import { rm, today } from "@/lib/format";
-import { DatePicker } from "@/components/DatePicker";
+import { ReportControls } from "@/components/ReportControls";
 import { ExportButton } from "@/components/ExportButton";
 
 export const dynamic = "force-dynamic";
@@ -19,11 +19,11 @@ function occColor(p: number) {
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ period?: string; date?: string; month?: string }>;
 }) {
-  const { date } = await searchParams;
-  const day = date || today();
-  const r = await computeReport(day);
+  const sp = await searchParams;
+  const range = reportRange(sp);
+  const r = await computeReport(range.start, range.end, range.period, range.label);
 
   const netColor =
     r.net > 0
@@ -35,10 +35,26 @@ export default async function ReportsPage({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">End-of-Day Report</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {range.period === "month" ? "Monthly Report" : "End-of-Day Report"}
+          </h1>
+          <p className="text-sm text-neutral-500">{r.label}</p>
+        </div>
         <div className="flex items-center gap-3">
-          <DatePicker date={day} />
-          <ExportButton type="report" date={day} />
+          <ReportControls
+            period={range.period}
+            date={sp.date || today()}
+            month={sp.month || today().slice(0, 7)}
+          />
+          <ExportButton
+            type="report"
+            params={{
+              period: range.period,
+              date: sp.date,
+              month: sp.month,
+            }}
+          />
         </div>
       </div>
 
@@ -95,8 +111,9 @@ export default async function ReportsPage({
       <section className="rounded-2xl border border-neutral-200 bg-white p-5">
         <h2 className="mb-1 font-semibold">Chair Occupancy</h2>
         <p className="mb-3 text-xs text-neutral-500">
-          % of each hour a chair was occupied (running or resting), {10}:00–
-          {20}:00
+          {r.days > 1 ? "Average % " : "% "}
+          of each hour a chair was occupied (running or resting), {10}:00–{20}:00
+          {r.days > 1 ? ` · averaged over ${r.days} days` : ""}
         </p>
         <div className="overflow-x-auto">
           <table className="text-xs">

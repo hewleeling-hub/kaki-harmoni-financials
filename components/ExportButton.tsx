@@ -3,13 +3,21 @@
 export function ExportButton({
   type,
   date,
+  params,
   label = "Export to Excel",
 }: {
   type: "sessions" | "products" | "expenses" | "reimbursements" | "report";
   date?: string;
+  params?: Record<string, string | undefined>;
   label?: string;
 }) {
-  const href = `/api/export/${type}${date ? `?date=${date}` : ""}`;
+  const all: Record<string, string | undefined> = { ...params };
+  if (date) all.date = date;
+  const qs = Object.entries(all)
+    .filter(([, v]) => v)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v as string)}`)
+    .join("&");
+  const href = `/api/export/${type}${qs ? `?${qs}` : ""}`;
   return (
     <a
       href={href}

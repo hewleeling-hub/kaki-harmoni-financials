@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { computeReport } from "@/lib/reports";
+import { computeReport, reportRange } from "@/lib/reports";
 import { dayBounds, today } from "@/lib/format";
 import { PAYERS } from "@/lib/constants";
 import type { Session, Sale, Chair } from "@/lib/types";
@@ -194,9 +194,23 @@ export async function GET(
   }
 
   if (type === "report") {
-    const r = await computeReport(date);
+    const range = reportRange({
+      period: url.searchParams.get("period") || undefined,
+      date: url.searchParams.get("date") || undefined,
+      month: url.searchParams.get("month") || undefined,
+    });
+    const r = await computeReport(
+      range.start,
+      range.end,
+      range.period,
+      range.label,
+    );
     const summary = [
-      { Metric: "Date", Value: r.date },
+      { Metric: "Period", Value: r.label },
+      {
+        Metric: "Range",
+        Value: r.start === r.end ? r.start : `${r.start} → ${r.end}`,
+      },
       { Metric: "Inflow (RM)", Value: r.inflow },
       { Metric: "Outflow (RM)", Value: r.outflow },
       { Metric: "Net Cashflow (RM)", Value: r.net },
@@ -233,13 +247,15 @@ export async function GET(
       }
       return row;
     });
+    const suffix =
+      range.period === "month" ? range.start.slice(0, 7) : range.start;
     return workbookResponse(
       [
         { name: "Summary", rows: summary },
         { name: "Revenue Split", rows: split },
         { name: "Occupancy %", rows: occupancy },
       ],
-      `kaki-harmoni-report-${date}.xlsx`,
+      `kaki-harmoni-report-${suffix}.xlsx`,
     );
   }
 

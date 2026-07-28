@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { dayBounds } from "@/lib/format";
+import { today } from "@/lib/format";
 import { OPEN_HOUR, CLOSE_HOUR } from "@/lib/constants";
 import type { Sale, SaleItem, Expense, Session, Chair, Product } from "@/lib/types";
 
@@ -12,7 +12,11 @@ export type RevenueGroup = {
 export type OccupancyCell = { chairId: string; hour: number; pct: number };
 
 export type DailyReport = {
-  date: string;
+  start: string;
+  end: string;
+  period: "day" | "month";
+  label: string;
+  days: number;
   inflow: number;
   outflow: number;
   net: number;
@@ -24,6 +28,34 @@ export type DailyReport = {
   hours: number[];
   outstandingReimbursements: { count: number; total: number };
 };
+
+// Resolve URL params into a concrete date range + label.
+export function reportRange(params: {
+  period?: string;
+  date?: string;
+  month?: string;
+}): { period: "day" | "month"; start: string; end: string; label: string } {
+  if (params.period === "month") {
+    const month = params.month || today().slice(0, 7); // YYYY-MM
+    const [y, m] = month.split("-").map(Number);
+    const start = `${month}-01`;
+    const lastDay = new Date(y, m, 0).getDate();
+    const end = `${month}-${String(lastDay).padStart(2, "0")}`;
+    const label = new Date(`${start}T00:00:00`).toLocaleDateString("en-MY", {
+      month: "long",
+      year: "numeric",
+    });
+    return { period: "month", start, end, label };
+  }
+  const date = params.date || today();
+  const label = new Date(`${date}T00:00:00`).toLocaleDateString("en-MY", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  return { period: "day", start: date, end: date, label };
+}
 
 function overlapMinutes(
   aStart: number,
@@ -49,9 +81,29 @@ function group(items: SaleItem[]): RevenueGroup {
   };
 }
 
-export async function computeReport(dateStr: string): Promise<DailyReport> {
+function localDate(iso: string): string {
+  const d = new Date(iso);
+  const off = d.getTimezoneOffset();
+  return new Date(d.getTime() - off * 60_000).toISOString().slice(0, 10);
+}
+
+// Aggregate over an inclusive [startStr, endStr] date range (both YYYY-MM-DD).
+export async function computeReport(
+  startStr: string,
+  endStr: string = startStr,
+  period: "day" | "month" = "day",
+  label?: string,
+): Promise<DailyReport> {
   const supabase = createAdminClient();
-  const { startISO, endISO } = dayBounds(dateStr);
+  const startISO = new Date(`${startStr}T00:00:00`).toISOString();
+  const endMs = new Date(`${endStr}T00:00:00`).getTime() + 24 * 60 * 60_000;
+  const endISO = new Date(endMs).toISOString();
+  const days =
+    Math.round(
+      (new Date(`${endStr}T00:00:00`).getTime() -
+        new Date(`${startStr}T00:00:00`).getTime()) /
+        86_400_000,
+    ) + 1;
 
   const [
     { data: salesData },
@@ -61,8 +113,16 @@ export async function computeReport(dateStr: string): Promise<DailyReport> {
     { data: productsData },
     { data: reimbData },
   ] = await Promise.all([
-    supabase.from("sales").select("*").eq("sale_date", dateStr),
-    supabase.from("expenses").select("*").eq("expense_date", dateStr),
+    supabase
+      .from("sales")
+      .select("*")
+      .gte("sale_date", startStr)
+      .lte("sale_date", endStr),
+    supabase
+      .from("expenses")
+      .select("*")
+      .gte("expense_date", startStr)
+      .lte("expense_date", endStr),
     supabase
       .from("sessions")
       .select("*")
@@ -83,7 +143,6 @@ export async function computeReport(dateStr: string): Promise<DailyReport> {
   const inflow = sales.reduce((a, s) => a + Number(s.total_amount), 0);
   const outflow = expenses.reduce((a, e) => a + Number(e.amount), 0);
 
-  // Sale items for the day's sales → revenue split.
   const saleIds = sales.map((s) => s.id);
   let items: SaleItem[] = [];
   if (saleIds.length) {
@@ -94,7 +153,7 @@ export async function computeReport(dateStr: string): Promise<DailyReport> {
     items = (data ?? []) as SaleItem[];
   }
 
-  // Group by product category so both bundle splits and standalone/quick sales
+  // Group by product category so bundle splits, standalone and quick sales all
   // land in the right bucket (spa / coffee / everything else = extras).
   const cat = (i: SaleItem) => productById.get(i.product_id)?.category;
   const spaItems = items.filter((i) => cat(i) === "spa");
@@ -103,37 +162,47 @@ export async function computeReport(dateStr: string): Promise<DailyReport> {
     (i) => cat(i) !== "spa" && cat(i) !== "coffee",
   );
 
-  // Occupancy grid: hours 10–20, per chair, % of each hour a chair was occupied
-  // (running or resting = the [started_at, rest_ends_at] window).
+  // Occupancy: average % per hour-of-day across the range (sum of occupied
+  // minutes for that hour over all days, ÷ (days × 60)).
   const hours: number[] = [];
   for (let h = OPEN_HOUR; h < CLOSE_HOUR; h++) hours.push(h);
 
+  const minutesByChairHour = new Map<string, number[]>();
+  for (const c of chairs) minutesByChairHour.set(c.id, hours.map(() => 0));
+
+  for (const s of sessions) {
+    const arr = minutesByChairHour.get(s.chair_id);
+    if (!arr) continue;
+    const dateStr = localDate(s.started_at);
+    const start = new Date(s.started_at).getTime();
+    const end = s.rest_ends_at ? new Date(s.rest_ends_at).getTime() : start;
+    hours.forEach((h, idx) => {
+      const hourStart =
+        new Date(`${dateStr}T00:00:00`).getTime() + h * 3_600_000;
+      arr[idx] += overlapMinutes(start, end, hourStart, hourStart + 3_600_000);
+    });
+  }
+
   const occupancy: OccupancyCell[] = [];
   for (const chair of chairs) {
-    const chairSessions = sessions.filter((s) => s.chair_id === chair.id);
-    for (const h of hours) {
-      const hourStart = new Date(`${dateStr}T00:00:00`).getTime() + h * 3_600_000;
-      const hourEnd = hourStart + 3_600_000;
-      let mins = 0;
-      for (const s of chairSessions) {
-        const start = new Date(s.started_at).getTime();
-        const end = s.rest_ends_at
-          ? new Date(s.rest_ends_at).getTime()
-          : start;
-        mins += overlapMinutes(start, end, hourStart, hourEnd);
-      }
+    const arr = minutesByChairHour.get(chair.id)!;
+    hours.forEach((h, idx) => {
       occupancy.push({
         chairId: chair.id,
         hour: h,
-        pct: Math.min(100, Math.round((mins / 60) * 100)),
+        pct: Math.min(100, Math.round((arr[idx] / (days * 60)) * 100)),
       });
-    }
+    });
   }
 
   const reimb = (reimbData ?? []) as { amount: number }[];
 
   return {
-    date: dateStr,
+    start: startStr,
+    end: endStr,
+    period,
+    label: label ?? startStr,
+    days,
     inflow,
     outflow,
     net: inflow - outflow,
