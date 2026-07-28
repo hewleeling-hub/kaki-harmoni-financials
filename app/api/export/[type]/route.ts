@@ -68,6 +68,11 @@ export async function GET(
       .select("*")
       .order("expense_date", { ascending: false })
       .order("created_at", { ascending: false });
+    const receiptLink = (v: string | null) => {
+      if (!v) return "";
+      if (/^https?:\/\//i.test(v)) return v;
+      return `${url.origin}/api/receipts/view?path=${encodeURIComponent(v)}`;
+    };
     const rows = (data ?? []).map((e) => ({
       Date: e.expense_date,
       Vendor: e.vendor,
@@ -78,7 +83,7 @@ export async function GET(
       "Amount (RM)": Number(e.amount),
       Settled: e.is_settled ? "Yes" : "No",
       "AI Category": e.ai_category ?? "",
-      "Receipt URL": e.receipt_url ?? "",
+      Receipt: receiptLink(e.receipt_url),
     }));
     return workbookResponse(
       [{ name: "Expenses", rows }],

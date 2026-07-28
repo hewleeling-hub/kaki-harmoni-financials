@@ -15,10 +15,12 @@ const EXT: Record<string, string> = {
 };
 const MAX_BYTES = 5 * 1024 * 1024;
 
-// Stores the original receipt file in Supabase Storage and returns a public URL
-// for expenses.receipt_url. Independent of the OCR feature — the image is kept
-// as an audit trail even when scanning is disabled. Self-provisions the bucket
-// on first use (requires the service-role key server-side).
+// Stores the original receipt file in a PRIVATE Supabase Storage bucket and
+// returns its permanent storage path (saved to expenses.receipt_url). Viewing
+// goes through /api/receipts/view, which mints a short-lived signed URL — so
+// receipts are never on a public URL. Independent of the OCR feature: the image
+// is kept as an audit trail even when scanning is disabled. Self-provisions the
+// bucket on first use (requires the service-role key server-side).
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   if (!body?.data || !body?.media_type) {
@@ -42,9 +44,9 @@ export async function POST(req: Request) {
 
   const supabase = createAdminClient();
 
-  // Ensure the public bucket exists (idempotent; ignores "already exists").
+  // Ensure the private bucket exists (idempotent; ignores "already exists").
   const { error: bucketErr } = await supabase.storage.createBucket(BUCKET, {
-    public: true,
+    public: false,
   });
   if (
     bucketErr &&
@@ -73,6 +75,6 @@ export async function POST(req: Request) {
     );
   }
 
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-  return NextResponse.json({ receipt_url: data.publicUrl });
+  // Return the permanent storage path; viewing is via /api/receipts/view.
+  return NextResponse.json({ path });
 }

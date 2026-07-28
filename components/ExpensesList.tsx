@@ -111,7 +111,11 @@ export function ExpensesList() {
                       {e.vendor}
                       {e.receipt_url && (
                         <a
-                          href={e.receipt_url}
+                          href={
+                            /^https?:\/\//i.test(e.receipt_url)
+                              ? e.receipt_url
+                              : `/api/receipts/view?path=${encodeURIComponent(e.receipt_url)}`
+                          }
                           target="_blank"
                           rel="noreferrer"
                           className="ml-2 text-xs font-normal text-emerald-700 underline"

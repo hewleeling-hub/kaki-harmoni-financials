@@ -31,7 +31,7 @@ export function ExpenseForm() {
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanNote, setScanNote] = useState<string | null>(null);
-  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+  const [receiptPath, setReceiptPath] = useState<string | null>(null);
   const [customCategory, setCustomCategory] = useState("");
 
   // When "Other" is picked, the typed label becomes the category (stored as
@@ -82,7 +82,7 @@ export function ExpenseForm() {
         body: JSON.stringify({ data, media_type: file.type }),
       })
         .then((r) => (r.ok ? r.json() : null))
-        .then((j) => j?.receipt_url && setReceiptUrl(j.receipt_url))
+        .then((j) => j?.path && setReceiptPath(j.path))
         .catch(() => {});
 
       const res = await fetch("/api/expenses/scan", {
@@ -148,7 +148,7 @@ export function ExpenseForm() {
         ...form,
         category: effectiveCategory(),
         amount: amt,
-        receipt_url: receiptUrl,
+        receipt_url: receiptPath,
       }),
     });
     setBusy(false);
@@ -192,11 +192,11 @@ export function ExpenseForm() {
         {scanNote && (
           <p className="mt-2 text-xs font-medium text-emerald-800">{scanNote}</p>
         )}
-        {receiptUrl && (
+        {receiptPath && (
           <p className="mt-1 text-xs text-emerald-700">
             📎 Receipt attached ·{" "}
             <a
-              href={receiptUrl}
+              href={`/api/receipts/view?path=${encodeURIComponent(receiptPath)}`}
               target="_blank"
               rel="noreferrer"
               className="underline"
