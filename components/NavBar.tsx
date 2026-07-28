@@ -7,7 +7,7 @@ const LINKS = [
   { href: "/", label: "Chair Board" },
   { href: "/sessions", label: "Sessions" },
   { href: "/products", label: "Products" },
-  { href: "/expenses", label: "Expenses" },
+  { href: "/expenses", label: "Purchases" },
   { href: "/reimbursements", label: "Reimbursements" },
   { href: "/reports", label: "Reports" },
 ];

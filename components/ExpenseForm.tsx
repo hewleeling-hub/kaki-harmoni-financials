@@ -213,7 +213,7 @@ export function ExpenseForm() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="mb-4 text-2xl font-bold tracking-tight">New Expense</h1>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight">New Purchase</h1>
       <div className="mb-4 rounded-2xl border border-dashed border-emerald-300 bg-emerald-50 p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -458,7 +458,7 @@ export function ExpenseForm() {
                   Math.abs(lineItemsTotal - (Number(form.amount) || 0)) > 0.01 && (
                     <span className="text-amber-600">
                       {" "}
-                      · expense total {rm(Number(form.amount))}
+                      · purchase total {rm(Number(form.amount))}
                     </span>
                   )}
               </div>
@@ -484,7 +484,7 @@ export function ExpenseForm() {
             disabled={busy}
             className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
           >
-            {busy ? "Saving…" : "Save expense"}
+            {busy ? "Saving…" : "Save purchase"}
           </button>
           <a
             href="/expenses"

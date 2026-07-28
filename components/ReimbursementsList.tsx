@@ -66,7 +66,7 @@ export function ReimbursementsList() {
         <p className="text-neutral-500">Loading…</p>
       ) : rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-neutral-500">
-          No reimbursements. They&apos;re created automatically when an expense is
+          No reimbursements. They&apos;re created automatically when a purchase is
           paid personally or on a staff card.
         </div>
       ) : (

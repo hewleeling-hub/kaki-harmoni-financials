@@ -60,16 +60,14 @@ export function ExpensesList() {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">
-          Expenses &amp; Fixed Assets
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight">Purchases</h1>
         <div className="flex items-center gap-2">
           <ExportButton type="expenses" />
           <Link
             href="/expenses/new"
             className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white"
           >
-            + Add Expense
+            + Add Purchase
           </Link>
         </div>
       </div>
@@ -134,7 +132,7 @@ export function ExpensesList() {
         <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-neutral-500">
           {expenses.length === 0 ? (
             <>
-              No expenses recorded.{" "}
+              No purchases recorded.{" "}
               <Link
                 href="/expenses/new"
                 className="font-medium text-emerald-700 underline"
@@ -144,7 +142,7 @@ export function ExpensesList() {
               .
             </>
           ) : (
-            "No expenses match these filters."
+            "No purchases match these filters."
           )}
         </div>
       ) : (
