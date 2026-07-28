@@ -60,7 +60,9 @@ export function ExpensesList() {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">Expenses</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Expenses &amp; Fixed Assets
+        </h1>
         <div className="flex items-center gap-2">
           <ExportButton type="expenses" />
           <Link
