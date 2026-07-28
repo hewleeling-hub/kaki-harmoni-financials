@@ -244,9 +244,19 @@ export async function GET(
         Metric: "Range",
         Value: r.start === r.end ? r.start : `${r.start} → ${r.end}`,
       },
-      { Metric: "Inflow (RM)", Value: r.inflow },
-      { Metric: "Outflow (RM)", Value: r.outflow },
+      { Metric: "Inflow — Sales (RM)", Value: r.inflow },
+      { Metric: "Cash Out (RM)", Value: r.outflow },
       { Metric: "Net Cashflow (RM)", Value: r.net },
+      { Metric: "Total Purchases (RM)", Value: r.purchases.total },
+      { Metric: "  Paid by Business (RM)", Value: r.purchases.paidDirect },
+      {
+        Metric: "  Fronted / On Credit — not yet paid (RM)",
+        Value: r.purchases.owed,
+      },
+      {
+        Metric: "  Reimbursements Settled (RM)",
+        Value: r.purchases.reimbSettled,
+      },
       { Metric: "Sessions", Value: r.sessionCount },
       { Metric: "Avg per Session (RM)", Value: Number(r.avgPerSession.toFixed(2)) },
       {

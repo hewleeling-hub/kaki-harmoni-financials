@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { today, gmt8Date } from "@/lib/format";
-import { OPEN_HOUR, CLOSE_HOUR } from "@/lib/constants";
+import { OPEN_HOUR, CLOSE_HOUR, REIMBURSABLE_PAYERS } from "@/lib/constants";
 import type { Sale, SaleItem, Expense, Session, Chair, Product } from "@/lib/types";
 
 export type RevenueGroup = {
@@ -20,8 +20,14 @@ export type DailyReport = {
   label: string;
   days: number;
   inflow: number;
-  outflow: number;
+  outflow: number; // cash out = paid-direct purchases + reimbursements settled in period
   net: number;
+  purchases: {
+    total: number; // all purchases in period (accrual)
+    paidDirect: number; // company / petty cash — cash left the business at purchase
+    owed: number; // owner-fronted / creditor — liability, not yet cash out
+    reimbSettled: number; // reimbursements/creditors settled in period — cash paid back
+  };
   sessionCount: number;
   avgPerSession: number;
   split: { spa: RevenueGroup; coffee: RevenueGroup; extras: RevenueGroup };
@@ -122,6 +128,7 @@ export async function computeReport(
     { data: chairsData },
     { data: productsData },
     { data: reimbData },
+    { data: settledReimbData },
   ] = await Promise.all([
     supabase
       .from("sales")
@@ -141,6 +148,13 @@ export async function computeReport(
     supabase.from("chairs").select("*").order("label"),
     supabase.from("products").select("*"),
     supabase.from("reimbursements").select("*").eq("is_settled", false),
+    // Reimbursements settled within the period → cash actually paid back.
+    supabase
+      .from("reimbursements")
+      .select("amount, settled_at")
+      .eq("is_settled", true)
+      .gte("settled_at", startISO)
+      .lt("settled_at", endISO),
   ]);
 
   const sales = (salesData ?? []) as Sale[];
@@ -151,7 +165,20 @@ export async function computeReport(
   const productById = new Map(products.map((p) => [p.id, p]));
 
   const inflow = sales.reduce((a, s) => a + Number(s.total_amount), 0);
-  const outflow = expenses.reduce((a, e) => a + Number(e.amount), 0);
+
+  // Cash-basis outflow: a purchase is real cash out only when the business
+  // itself paid (company/petty cash). Purchases fronted by an owner or bought
+  // on credit are liabilities until the reimbursement/creditor is settled.
+  const purchasesTotal = expenses.reduce((a, e) => a + Number(e.amount), 0);
+  const paidDirect = expenses
+    .filter((e) => !REIMBURSABLE_PAYERS.includes(e.payer))
+    .reduce((a, e) => a + Number(e.amount), 0);
+  const owed = purchasesTotal - paidDirect;
+  const reimbSettled = (settledReimbData ?? []).reduce(
+    (a, r) => a + Number(r.amount),
+    0,
+  );
+  const outflow = paidDirect + reimbSettled;
 
   const saleIds = sales.map((s) => s.id);
   let items: SaleItem[] = [];
@@ -216,6 +243,12 @@ export async function computeReport(
     inflow,
     outflow,
     net: inflow - outflow,
+    purchases: {
+      total: purchasesTotal,
+      paidDirect,
+      owed,
+      reimbSettled,
+    },
     sessionCount: sessions.length,
     avgPerSession: sessions.length ? inflow / sessions.length : 0,
     split: {

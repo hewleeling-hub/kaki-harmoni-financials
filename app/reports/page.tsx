@@ -75,7 +75,12 @@ export default async function ReportsPage({
       {/* Headline tiles */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Tile label="Inflow" value={rm(r.inflow)} valueClass="text-emerald-600" />
-        <Tile label="Outflow" value={rm(r.outflow)} valueClass="text-red-600" />
+        <Tile
+          label="Cash Out"
+          value={rm(r.outflow)}
+          valueClass="text-red-600"
+          sub="paid by business"
+        />
         <Tile label="Net Cashflow" value={rm(r.net)} valueClass={netColor} />
         <Tile
           label="Sessions"
@@ -83,6 +88,42 @@ export default async function ReportsPage({
           sub={`avg ${rm(r.avgPerSession)}/session`}
         />
       </div>
+
+      {/* Purchases & payables — accrual vs cash */}
+      <section className="rounded-2xl border border-neutral-200 bg-white p-5">
+        <h2 className="mb-3 font-semibold">Purchases &amp; Payables</h2>
+        <div className="space-y-1 text-sm">
+          <Row label="Total purchases (period)" value={rm(r.purchases.total)} />
+          <Row
+            label="Paid by business (cash out)"
+            value={rm(r.purchases.paidDirect)}
+          />
+          <Row
+            label="Fronted by owner / on credit — not yet paid"
+            value={rm(r.purchases.owed)}
+            muted
+          />
+          <Row
+            label="Reimbursements / creditors settled (cash paid back)"
+            value={rm(r.purchases.reimbSettled)}
+          />
+          <div className="my-1 border-t border-neutral-100" />
+          <Row
+            label="Cash Out this period"
+            value={rm(r.outflow)}
+            strong
+          />
+          <Row
+            label="Outstanding payables (all unsettled)"
+            value={rm(r.outstandingReimbursements.total)}
+            muted
+          />
+        </div>
+        <p className="mt-3 text-xs text-neutral-400">
+          Owner-fronted and creditor purchases are liabilities, not cash out —
+          they only hit Cash Out when you settle them under Reimbursements.
+        </p>
+      </section>
 
       {/* Revenue split */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-5">
@@ -194,6 +235,29 @@ export default async function ReportsPage({
           </p>
         )}
       </section>
+    </div>
+  );
+}
+
+function Row({
+  label,
+  value,
+  muted,
+  strong,
+}: {
+  label: string;
+  value: string;
+  muted?: boolean;
+  strong?: boolean;
+}) {
+  return (
+    <div
+      className={`flex items-center justify-between gap-4 ${
+        muted ? "text-neutral-500" : "text-neutral-700"
+      } ${strong ? "font-semibold text-neutral-900" : ""}`}
+    >
+      <span>{label}</span>
+      <span className="tabular-nums">{value}</span>
     </div>
   );
 }
