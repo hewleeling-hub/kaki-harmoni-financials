@@ -5,10 +5,21 @@ import type { Reimbursement } from "@/lib/types";
 import { rm } from "@/lib/format";
 import { ExportButton } from "@/components/ExportButton";
 
+type ReimbursementRow = Reimbursement & {
+  vendor?: string | null;
+  receipt_url?: string | null;
+};
+
+function receiptHref(v: string) {
+  return /^https?:\/\//i.test(v)
+    ? v
+    : `/api/receipts/view?path=${encodeURIComponent(v)}`;
+}
+
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
 export function ReimbursementsList() {
-  const [rows, setRows] = useState<Reimbursement[] | null>(null);
+  const [rows, setRows] = useState<ReimbursementRow[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   async function load() {
@@ -81,6 +92,22 @@ export function ReimbursementsList() {
                         <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">
                           &gt; 7 days
                         </span>
+                      )}
+                      {(r.vendor || r.receipt_url) && (
+                        <div className="mt-0.5 text-xs font-normal text-neutral-500">
+                          {r.vendor}
+                          {r.receipt_url && (
+                            <a
+                              href={receiptHref(r.receipt_url)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="ml-2 text-emerald-700 underline"
+                              title="View receipt"
+                            >
+                              📎 receipt
+                            </a>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right font-semibold">

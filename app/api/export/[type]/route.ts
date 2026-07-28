@@ -96,13 +96,35 @@ export async function GET(
       .from("reimbursements")
       .select("*")
       .order("created_at", { ascending: false });
-    const rows = (data ?? []).map((r) => ({
-      "Owed To": r.owed_to,
-      "Amount (RM)": Number(r.amount),
-      Status: r.is_settled ? "Settled" : "Outstanding",
-      Created: String(r.created_at).slice(0, 10),
-      "Settled At": r.settled_at ? String(r.settled_at).slice(0, 10) : "",
-    }));
+    const list = data ?? [];
+    const expIds = [...new Set(list.map((r) => r.expense_id))].filter(Boolean);
+    const expById = new Map<string, { vendor: string; receipt_url: string | null }>();
+    if (expIds.length) {
+      const { data: exps } = await supabase
+        .from("expenses")
+        .select("id, vendor, receipt_url")
+        .in("id", expIds);
+      for (const e of exps ?? [])
+        expById.set(e.id, { vendor: e.vendor, receipt_url: e.receipt_url });
+    }
+    const receiptLink = (v: string | null | undefined) =>
+      !v
+        ? ""
+        : /^https?:\/\//i.test(v)
+          ? v
+          : `${url.origin}/api/receipts/view?path=${encodeURIComponent(v)}`;
+    const rows = list.map((r) => {
+      const e = expById.get(r.expense_id);
+      return {
+        "Owed To": r.owed_to,
+        Vendor: e?.vendor ?? "",
+        "Amount (RM)": Number(r.amount),
+        Status: r.is_settled ? "Settled" : "Outstanding",
+        Created: String(r.created_at).slice(0, 10),
+        "Settled At": r.settled_at ? String(r.settled_at).slice(0, 10) : "",
+        Receipt: receiptLink(e?.receipt_url),
+      };
+    });
     return workbookResponse(
       [{ name: "Reimbursements", rows }],
       `kaki-harmoni-reimbursements-${stamp}.xlsx`,
