@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { computeReport, reportRange } from "@/lib/reports";
 import { getSalesLedger } from "@/lib/sales";
 import { dayBounds, today, timeOfDay, gmt8Date } from "@/lib/format";
-import { PAYERS } from "@/lib/constants";
+import { PAYERS, REIMBURSABLE_PAYERS } from "@/lib/constants";
 import type { Session, Sale, Chair } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +82,11 @@ export async function GET(
       Payer: payerLabel(e.payer),
       Type: String(e.expense_type).replace(/_/g, " "),
       "Amount (RM)": Number(e.amount),
+      Status: !REIMBURSABLE_PAYERS.includes(e.payer)
+        ? "Paid"
+        : e.is_settled
+          ? "Settled"
+          : "Owed",
       Items: Array.isArray(e.line_items) ? e.line_items.length : 0,
       Settled: e.is_settled ? "Yes" : "No",
       "AI Category": e.ai_category ?? "",

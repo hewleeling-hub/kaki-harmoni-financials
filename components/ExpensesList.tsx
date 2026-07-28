@@ -3,9 +3,28 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Expense } from "@/lib/types";
-import { PAYERS, EXPENSE_TYPES } from "@/lib/constants";
+import { PAYERS, EXPENSE_TYPES, REIMBURSABLE_PAYERS } from "@/lib/constants";
 import { rm } from "@/lib/format";
 import { ExportButton } from "@/components/ExportButton";
+
+// Payment status of a purchase: business-paid vs owed (owner-fronted/creditor).
+function payStatus(e: Expense): {
+  key: "paid" | "owed" | "settled";
+  label: string;
+  cls: string;
+} {
+  if (!REIMBURSABLE_PAYERS.includes(e.payer)) {
+    return { key: "paid", label: "Paid", cls: "bg-neutral-100 text-neutral-600" };
+  }
+  if (e.is_settled) {
+    return {
+      key: "settled",
+      label: "Settled",
+      cls: "bg-emerald-100 text-emerald-700",
+    };
+  }
+  return { key: "owed", label: "Owed", cls: "bg-amber-100 text-amber-800" };
+}
 
 export function ExpensesList() {
   const [expenses, setExpenses] = useState<Expense[] | null>(null);
@@ -13,6 +32,7 @@ export function ExpensesList() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     fetch("/api/expenses", { cache: "no-store" })
@@ -28,9 +48,14 @@ export function ExpensesList() {
         (typeFilter === "all" || e.expense_type === typeFilter) &&
         (yearFilter === "all" || String(e.expense_date).slice(0, 4) === yearFilter) &&
         (monthFilter === "all" ||
-          String(e.expense_date).slice(5, 7) === monthFilter),
+          String(e.expense_date).slice(5, 7) === monthFilter) &&
+        (statusFilter === "all" || payStatus(e).key === statusFilter),
     );
-  }, [expenses, payerFilter, typeFilter, yearFilter, monthFilter]);
+  }, [expenses, payerFilter, typeFilter, yearFilter, monthFilter, statusFilter]);
+
+  const owedTotal = (expenses ?? [])
+    .filter((e) => payStatus(e).key === "owed")
+    .reduce((a, e) => a + Number(e.amount), 0);
 
   // Distinct years present in the data (newest first), for the year dropdown.
   const years = useMemo(() => {
@@ -121,8 +146,21 @@ export function ExpensesList() {
             </option>
           ))}
         </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        >
+          <option value="all">All statuses</option>
+          <option value="owed">Owed</option>
+          <option value="settled">Settled</option>
+          <option value="paid">Paid</option>
+        </select>
         <span className="ml-auto self-center text-sm text-neutral-500">
           {filtered.length} rows · {rm(total)}
+          {owedTotal > 0 && (
+            <span className="text-amber-600"> · {rm(owedTotal)} owed</span>
+          )}
         </span>
       </div>
 
@@ -155,6 +193,7 @@ export function ExpensesList() {
                 <th className="px-4 py-3 font-medium">Category</th>
                 <th className="px-4 py-3 font-medium">Payer</th>
                 <th className="px-4 py-3 font-medium">Type</th>
+                <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 text-right font-medium">Amount</th>
               </tr>
             </thead>
@@ -213,11 +252,21 @@ export function ExpensesList() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 capitalize text-neutral-600">
-                    {e.payer.replace("_", " ")}
+                  <td className="px-4 py-3 text-neutral-600">
+                    {PAYERS.find((p) => p.value === e.payer)?.label ??
+                      e.payer.replace(/_/g, " ")}
                   </td>
                   <td className="px-4 py-3 capitalize text-neutral-600">
-                    {e.expense_type.replace("_", " ")}
+                    {e.expense_type.replace(/_/g, " ")}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        payStatus(e).cls
+                      }`}
+                    >
+                      {payStatus(e).label}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-right font-semibold">
                     {rm(e.amount)}
