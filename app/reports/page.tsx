@@ -1,6 +1,7 @@
 import { computeReport } from "@/lib/reports";
 import { rm, today } from "@/lib/format";
 import { DatePicker } from "@/components/DatePicker";
+import { ExportButton } from "@/components/ExportButton";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,10 @@ export default async function ReportsPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight">End-of-Day Report</h1>
-        <DatePicker date={day} />
+        <div className="flex items-center gap-3">
+          <DatePicker date={day} />
+          <ExportButton type="report" date={day} />
+        </div>
       </div>
 
       {/* Headline tiles */}

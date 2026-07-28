@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { dayBounds, timeOfDay, rm, today } from "@/lib/format";
+import { ExportButton } from "@/components/ExportButton";
 import type { Session, Sale, Chair } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -48,12 +49,15 @@ export default async function SessionsPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Today&apos;s Sessions</h1>
-        <p className="text-sm text-neutral-500">
-          {sessionRows.length} session{sessionRows.length === 1 ? "" : "s"} ·{" "}
-          {rm(totalToday)}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-neutral-500">
+            {sessionRows.length} session{sessionRows.length === 1 ? "" : "s"} ·{" "}
+            {rm(totalToday)}
+          </p>
+          <ExportButton type="sessions" />
+        </div>
       </div>
 
       {sessionRows.length === 0 ? (

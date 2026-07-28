@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Expense } from "@/lib/types";
 import { PAYERS, EXPENSE_TYPES } from "@/lib/constants";
 import { rm } from "@/lib/format";
+import { ExportButton } from "@/components/ExportButton";
 
 export function ExpensesList() {
   const [expenses, setExpenses] = useState<Expense[] | null>(null);
@@ -32,12 +33,15 @@ export function ExpensesList() {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Expenses</h1>
-        <Link
-          href="/expenses/new"
-          className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white"
-        >
-          + Add Expense
-        </Link>
+        <div className="flex items-center gap-2">
+          <ExportButton type="expenses" />
+          <Link
+            href="/expenses/new"
+            className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white"
+          >
+            + Add Expense
+          </Link>
+        </div>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-3">

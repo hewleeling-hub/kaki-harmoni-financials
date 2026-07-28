@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Product } from "@/lib/types";
 import { PRODUCT_CATEGORIES } from "@/lib/constants";
 import { rm } from "@/lib/format";
+import { ExportButton } from "@/components/ExportButton";
 
 type Draft = {
   name: string;
@@ -97,7 +98,10 @@ export function ProductManager() {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold tracking-tight">Products</h1>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">Products</h1>
+        <ExportButton type="products" />
+      </div>
 
       <div className="mb-6 rounded-2xl border border-neutral-200 bg-white p-5">
         <h2 className="mb-3 font-semibold">

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Reimbursement } from "@/lib/types";
 import { rm } from "@/lib/format";
+import { ExportButton } from "@/components/ExportButton";
 
 const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 
@@ -40,11 +41,14 @@ export function ReimbursementsList() {
 
   return (
     <div>
-      <div className="mb-4 flex items-baseline justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold tracking-tight">Reimbursements</h1>
-        <p className="text-sm text-neutral-500">
-          {outstanding.length} outstanding · {rm(outstandingTotal)}
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-neutral-500">
+            {outstanding.length} outstanding · {rm(outstandingTotal)}
+          </p>
+          <ExportButton type="reimbursements" />
+        </div>
       </div>
 
       {!rows ? (
