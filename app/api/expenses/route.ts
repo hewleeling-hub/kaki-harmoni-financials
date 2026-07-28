@@ -74,8 +74,10 @@ export async function POST(req: Request) {
   // create_reimbursement, Medium risk — drafted on save).
   let reimbursement = null;
   if (REIMBURSABLE_PAYERS.includes(payer)) {
+    // Owe it back to the named payer (e.g. "Owner (MG)", "Staff Card").
     const owed_to =
-      payer === "personal" ? "Owner (personal)" : "Staff (card)";
+      PAYERS.find((p) => p.value === payer)?.label ??
+      (payer === "personal" ? "Owner (personal)" : payer);
     const { data: r } = await supabase
       .from("reimbursements")
       .insert({

@@ -342,7 +342,7 @@ export function ExpenseForm() {
           <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
             We&apos;ll log this as owed to{" "}
             <strong>
-              {form.payer === "personal" ? "Owner (personal)" : "Staff (card)"}
+              {PAYERS.find((p) => p.value === form.payer)?.label ?? form.payer}
             </strong>{" "}
             and create a reimbursement to settle later.
           </div>

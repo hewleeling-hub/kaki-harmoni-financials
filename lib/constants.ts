@@ -29,12 +29,17 @@ export const EXPENSE_CATEGORIES = [
   "marketing",
   "wages",
   "transport",
+  "petrol",
+  "toll",
+  "meals",
   "other",
 ] as const;
 
 export const PAYERS = [
   { value: "company", label: "Company" },
-  { value: "personal", label: "Personal (Owner)" },
+  { value: "owner_mg", label: "Owner (MG)" },
+  { value: "owner_hll", label: "Owner (HLL)" },
+  { value: "owner_ky", label: "Owner (KY)" },
   { value: "petty_cash", label: "Petty Cash" },
   { value: "staff_card", label: "Staff Card" },
 ] as const;
@@ -60,7 +65,14 @@ export const ASSET_CATEGORIES = [
 export const PRODUCT_CATEGORIES = ["spa", "coffee", "food", "retail"] as const;
 
 // Payers that create a reimbursement (money fronted by a person, owed back).
-export const REIMBURSABLE_PAYERS = ["personal", "staff_card"];
+// "personal" kept for legacy rows created before named owners.
+export const REIMBURSABLE_PAYERS = [
+  "owner_mg",
+  "owner_hll",
+  "owner_ky",
+  "staff_card",
+  "personal",
+];
 
 // Operating window for occupancy grid (10:00–20:00).
 export const OPEN_HOUR = 10;

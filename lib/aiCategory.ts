@@ -44,10 +44,25 @@ const RULES: { category: (typeof EXPENSE_CATEGORIES)[number]; keywords: string[]
     keywords: ["wage", "salary", "payroll", "allowance", "commission", "staff pay"],
   },
   {
+    category: "petrol",
+    keywords: ["petrol", "fuel", "shell", "petronas", "caltex", "bhp", "petron"],
+  },
+  {
+    category: "toll",
+    keywords: ["toll", "touch n go", "touch 'n go", "tng", "smarttag", "smart tag", "plus highway"],
+  },
+  {
+    category: "meals",
+    keywords: [
+      "meal", "food", "lunch", "dinner", "breakfast", "makan", "restaurant",
+      "cafe", "kopitiam", "mamak", "kfc", "mcd", "mcdonald",
+    ],
+  },
+  {
     category: "transport",
     keywords: [
-      "petrol", "fuel", "grab", "delivery", "courier", "parking", "transport",
-      "toll", "lorry", "van", "shipping", "postage",
+      "grab", "delivery", "courier", "parking", "transport", "lorry", "van",
+      "shipping", "postage",
     ],
   },
 ];
