@@ -41,7 +41,7 @@ export const PAYERS = [
   { value: "owner_hll", label: "Owner (HLL)" },
   { value: "owner_ky", label: "Owner (KY)" },
   { value: "petty_cash", label: "Petty Cash" },
-  { value: "staff_card", label: "Staff Card" },
+  { value: "creditor", label: "Creditor" },
 ] as const;
 
 export const EXPENSE_TYPES = [
@@ -64,12 +64,13 @@ export const ASSET_CATEGORIES = [
 
 export const PRODUCT_CATEGORIES = ["spa", "coffee", "food", "retail"] as const;
 
-// Payers that create a reimbursement (money fronted by a person, owed back).
-// "personal" kept for legacy rows created before named owners.
+// Payers that create an amount owed back (owner fronted the money, or bought on
+// credit from a creditor). "staff_card"/"personal" kept for legacy rows.
 export const REIMBURSABLE_PAYERS = [
   "owner_mg",
   "owner_hll",
   "owner_ky",
+  "creditor",
   "staff_card",
   "personal",
 ];

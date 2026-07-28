@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeReport, reportRange } from "@/lib/reports";
-import { dayBounds, today } from "@/lib/format";
+import { getSalesLedger } from "@/lib/sales";
+import { dayBounds, today, timeOfDay } from "@/lib/format";
 import { PAYERS } from "@/lib/constants";
 import type { Session, Sale, Chair } from "@/lib/types";
 
@@ -190,6 +191,30 @@ export async function GET(
     return workbookResponse(
       [{ name: `Sessions ${date}`, rows: out }],
       `kaki-harmoni-sessions-${date}.xlsx`,
+    );
+  }
+
+  if (type === "sales") {
+    const range = reportRange({
+      period: url.searchParams.get("period") || undefined,
+      date: url.searchParams.get("date") || undefined,
+      month: url.searchParams.get("month") || undefined,
+    });
+    const ledger = await getSalesLedger(range.start, range.end);
+    const rows = ledger.map((r) => ({
+      Date: r.sale_date,
+      Time: timeOfDay(r.created_at),
+      Source: r.source,
+      Kind: r.kind === "quick" ? "Quick Sale" : "Chair Session",
+      Items: r.items,
+      Payment: r.payment_method.replace(/_/g, " "),
+      "Total (RM)": r.total,
+    }));
+    const suffix =
+      range.period === "month" ? range.start.slice(0, 7) : range.start;
+    return workbookResponse(
+      [{ name: "Sales", rows }],
+      `kaki-harmoni-sales-${suffix}.xlsx`,
     );
   }
 

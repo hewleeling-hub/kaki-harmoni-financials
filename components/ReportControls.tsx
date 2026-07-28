@@ -6,10 +6,12 @@ export function ReportControls({
   period,
   date,
   month,
+  basePath = "/reports",
 }: {
   period: "day" | "month";
   date: string;
   month: string;
+  basePath?: string;
 }) {
   const router = useRouter();
   return (
@@ -19,8 +21,8 @@ export function ReportControls({
         onChange={(e) =>
           router.push(
             e.target.value === "month"
-              ? `/reports?period=month&month=${month}`
-              : `/reports?period=day&date=${date}`,
+              ? `${basePath}?period=month&month=${month}`
+              : `${basePath}?period=day&date=${date}`,
           )
         }
         className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
@@ -33,7 +35,7 @@ export function ReportControls({
           type="month"
           value={month}
           onChange={(e) =>
-            router.push(`/reports?period=month&month=${e.target.value}`)
+            router.push(`${basePath}?period=month&month=${e.target.value}`)
           }
           className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
         />
@@ -42,7 +44,7 @@ export function ReportControls({
           type="date"
           value={date}
           onChange={(e) =>
-            router.push(`/reports?period=day&date=${e.target.value}`)
+            router.push(`${basePath}?period=day&date=${e.target.value}`)
           }
           className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
         />

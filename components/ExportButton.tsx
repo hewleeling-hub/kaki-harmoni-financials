@@ -6,7 +6,13 @@ export function ExportButton({
   params,
   label = "Export to Excel",
 }: {
-  type: "sessions" | "products" | "expenses" | "reimbursements" | "report";
+  type:
+    | "sessions"
+    | "products"
+    | "expenses"
+    | "reimbursements"
+    | "report"
+    | "sales";
   date?: string;
   params?: Record<string, string | undefined>;
   label?: string;
