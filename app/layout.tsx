@@ -18,11 +18,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased bg-neutral-50 text-neutral-900 min-h-screen">
+      <body className="antialiased bg-[#F7F9FC] text-[#1F2937] min-h-screen">
         <ServiceWorkerRegister />
         <OfflineBanner />
         <NavBar />
-        <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
+        <main className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6">
+          {children}
+        </main>
       </body>
     </html>
   );
