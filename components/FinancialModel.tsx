@@ -337,7 +337,7 @@ export function FinancialModel({ anchors }: { anchors?: ModelAnchors }) {
         </Card>
       </Section>
 
-      <div className="flex flex-wrap gap-3 text-sm">
+      <div className="flex flex-wrap items-center gap-3 text-sm">
         <span className="self-center text-[#6B7280]">Real actuals:</span>
         {[
           ["/reports", "Reports"],
@@ -348,6 +348,12 @@ export function FinancialModel({ anchors }: { anchors?: ModelAnchors }) {
             {label} →
           </Link>
         ))}
+        <a
+          href="/api/backup"
+          className="ml-auto rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 font-medium text-[#6B7280] hover:border-[#CBD5E1]"
+        >
+          ⬇ Download data backup
+        </a>
       </div>
     </div>
   );
