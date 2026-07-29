@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Reimbursement } from "@/lib/types";
 import { rm } from "@/lib/format";
 import { ExportButton } from "@/components/ExportButton";
@@ -21,6 +21,8 @@ const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
 export function ReimbursementsList() {
   const [rows, setRows] = useState<ReimbursementRow[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [owedFilter, setOwedFilter] = useState("all");
 
   async function load() {
     const res = await fetch("/api/reimbursements", { cache: "no-store" });
@@ -50,6 +52,20 @@ export function ReimbursementsList() {
     0,
   );
 
+  const owedNames = useMemo(
+    () => [...new Set((rows ?? []).map((r) => r.owed_to))].sort(),
+    [rows],
+  );
+  const filtered = useMemo(() => {
+    return (rows ?? []).filter(
+      (r) =>
+        (statusFilter === "all" ||
+          (statusFilter === "settled" ? r.is_settled : !r.is_settled)) &&
+        (owedFilter === "all" || r.owed_to === owedFilter),
+    );
+  }, [rows, statusFilter, owedFilter]);
+  const filteredTotal = filtered.reduce((a, r) => a + Number(r.amount), 0);
+
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -62,12 +78,45 @@ export function ReimbursementsList() {
         </div>
       </div>
 
+      {rows && rows.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-3">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          >
+            <option value="all">All statuses</option>
+            <option value="outstanding">Outstanding</option>
+            <option value="settled">Settled</option>
+          </select>
+          <select
+            value={owedFilter}
+            onChange={(e) => setOwedFilter(e.target.value)}
+            className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          >
+            <option value="all">All payees</option>
+            {owedNames.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+          <span className="ml-auto self-center text-sm text-neutral-500">
+            {filtered.length} rows · {rm(filteredTotal)}
+          </span>
+        </div>
+      )}
+
       {!rows ? (
         <p className="text-neutral-500">Loading…</p>
       ) : rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-neutral-500">
           No reimbursements. They&apos;re created automatically when a purchase is
           paid personally or on a staff card.
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-neutral-500">
+          No reimbursements match these filters.
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
@@ -81,7 +130,7 @@ export function ReimbursementsList() {
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
-              {rows.map((r) => {
+              {filtered.map((r) => {
                 const age = Date.now() - new Date(r.created_at).getTime();
                 const stale = !r.is_settled && age > SEVEN_DAYS;
                 return (
