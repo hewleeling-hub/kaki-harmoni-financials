@@ -352,7 +352,7 @@ export function FinancialModel({ anchors }: { anchors?: ModelAnchors }) {
           href="/api/backup"
           className="ml-auto rounded-lg border border-[#E5E7EB] bg-white px-3 py-1.5 font-medium text-[#6B7280] hover:border-[#CBD5E1]"
         >
-          ⬇ Download data backup
+          ⬇ Download full backup
         </a>
       </div>
     </div>

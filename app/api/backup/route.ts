@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import JSZip from "jszip";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { today } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const TABLES = [
   "chairs",
@@ -15,14 +16,34 @@ const TABLES = [
   "reimbursements",
 ] as const;
 
-// Full data backup: every table dumped to one JSON file. Read-only. Pairs with
-// the code (git tag + zip) for a complete app backup. Restore by re-inserting
-// each table's rows in the order above.
+const BUCKET = "receipts";
+
+type SB = ReturnType<typeof createAdminClient>;
+
+// Recursively list every file path in a storage bucket.
+async function listAll(supabase: SB, prefix = ""): Promise<string[]> {
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .list(prefix, { limit: 1000 });
+  if (error || !data) return [];
+  const out: string[] = [];
+  for (const item of data) {
+    const path = prefix ? `${prefix}/${item.name}` : item.name;
+    if (item.id === null) {
+      out.push(...(await listAll(supabase, path)));
+    } else {
+      out.push(path);
+    }
+  }
+  return out;
+}
+
+// Complete backup: a ZIP with data.json (all tables) + receipts/ (image files).
 export async function GET() {
   const supabase = createAdminClient();
+
   const data: Record<string, unknown[]> = {};
   const counts: Record<string, number> = {};
-
   for (const t of TABLES) {
     const { data: rows, error } = await supabase.from(t).select("*");
     if (error) {
@@ -35,18 +56,38 @@ export async function GET() {
     counts[t] = rows?.length ?? 0;
   }
 
-  const backup = {
+  const zip = new JSZip();
+
+  // Receipt image files (best-effort — skipped if storage is unavailable).
+  let receiptCount = 0;
+  try {
+    const paths = await listAll(supabase);
+    for (const p of paths) {
+      const { data: blob } = await supabase.storage.from(BUCKET).download(p);
+      if (blob) {
+        const buf = Buffer.from(await blob.arrayBuffer());
+        zip.file(`receipts/${p}`, buf);
+        receiptCount++;
+      }
+    }
+  } catch {
+    // leave receiptCount as-is
+  }
+
+  const manifest = {
     app: "kaki-harmoni-financials",
     version: 1,
     exported_at: new Date().toISOString(),
-    counts,
+    counts: { ...counts, receipt_files: receiptCount },
     data,
   };
+  zip.file("data.json", JSON.stringify(manifest, null, 2));
 
-  return new NextResponse(JSON.stringify(backup, null, 2), {
+  const buf = await zip.generateAsync({ type: "nodebuffer" });
+  return new NextResponse(new Uint8Array(buf), {
     headers: {
-      "Content-Type": "application/json",
-      "Content-Disposition": `attachment; filename="kaki-harmoni-backup-${today()}.json"`,
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="kaki-harmoni-backup-${today()}.zip"`,
       "Cache-Control": "no-store",
     },
   });
