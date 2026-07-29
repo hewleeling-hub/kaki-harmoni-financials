@@ -20,8 +20,15 @@ export function NavBar() {
     <header className="sticky top-0 z-20 border-b border-neutral-200 bg-white/90 backdrop-blur">
       <div className="mx-auto max-w-6xl px-4">
         <div className="flex items-center gap-2 py-3 overflow-x-auto">
-          <Link href="/" className="mr-3 shrink-0 font-bold tracking-tight">
-            🦶 Kaki Harmoni
+          <Link
+            href="/dashboard"
+            className="mr-3 shrink-0 font-serif text-lg font-bold tracking-tight"
+            aria-label="Kaki Harmoni"
+          >
+            <span style={{ color: "#1F5A5E" }}>Kaki</span>{" "}
+            <span style={{ color: "#D2825E" }}>
+              Harm<span aria-hidden="true">♥</span>ni
+            </span>
           </Link>
           <nav className="flex items-center gap-1">
             {LINKS.map((l) => {
