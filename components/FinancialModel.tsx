@@ -57,12 +57,16 @@ export function FinancialModel({ anchors }: { anchors?: ModelAnchors }) {
     const roi = a.capex > 0 ? annualNet / a.capex : 0;
     const payback = netProfit > 0 ? a.capex / netProfit : Infinity;
     const cash12 = -a.capex + netProfit * 12;
-    const series = Array.from({ length: 25 }, (_, t) => ({
+    // Extend the horizon so the break-even crossing is always visible.
+    const horizon = Math.min(
+      60,
+      Math.max(24, isFinite(payback) ? Math.ceil(payback) + 3 : 24),
+    );
+    const series = Array.from({ length: horizon + 1 }, (_, t) => ({
       label: `M${t}`,
       value: -a.capex + netProfit * t,
     }));
-    const beIndex =
-      netProfit > 0 && payback <= 24 ? payback : null;
+    const beIndex = netProfit > 0 && payback <= horizon ? payback : null;
     return {
       revenue,
       cogs,
