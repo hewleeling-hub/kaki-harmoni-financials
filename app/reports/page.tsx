@@ -2,11 +2,37 @@ import { computeReport, reportRange } from "@/lib/reports";
 import { rm, today } from "@/lib/format";
 import { ReportControls } from "@/components/ReportControls";
 import { ExportButton } from "@/components/ExportButton";
+import { GroupedBars, BreakEvenChart } from "@/components/charts";
 
 export const dynamic = "force-dynamic";
 
 function pct(n: number) {
   return `${Math.round(n * 100)}%`;
+}
+
+// Weekday + DD Mon for the daily cashflow table (GMT+8).
+function fmtDay(d: string) {
+  return new Date(`${d}T12:00:00+08:00`).toLocaleDateString("en-MY", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    timeZone: "Asia/Kuala_Lumpur",
+  });
+}
+
+function signClass(n: number) {
+  if (n > 0) return "text-emerald-600";
+  if (n < 0) return "text-red-600";
+  return "text-neutral-400";
+}
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: color }} />
+      {label}
+    </span>
+  );
 }
 
 function occColor(p: number) {
@@ -88,6 +114,9 @@ export default async function ReportsPage({
           sub={`avg ${rm(r.avgPerSession)}/session`}
         />
       </div>
+
+      {/* Daily cashflow — day-by-day cash in / out / net / running balance */}
+      <DailyCashflowSection report={r} />
 
       {/* Purchases & payables — accrual vs cash */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-5">
@@ -236,6 +265,125 @@ export default async function ReportsPage({
         )}
       </section>
     </div>
+  );
+}
+
+function DailyCashflowSection({
+  report,
+}: {
+  report: Awaited<ReturnType<typeof computeReport>>;
+}) {
+  const daily = report.daily;
+  const hasActivity = daily.some((d) => d.inflow !== 0 || d.outflow !== 0);
+  // Charts read well up to ~2 months; beyond that the table alone stays legible.
+  const showCharts = daily.length > 1 && daily.length <= 62;
+
+  return (
+    <section className="rounded-2xl border border-neutral-200 bg-white p-5">
+      <div className="mb-3">
+        <h2 className="font-semibold">Daily Cashflow</h2>
+        <p className="text-xs text-neutral-500">
+          Cash in vs cash out for each day, with a running balance (cash-basis).
+        </p>
+      </div>
+
+      {!hasActivity ? (
+        <p className="text-sm text-neutral-500">
+          No cash movement in this period.
+        </p>
+      ) : (
+        <>
+          {showCharts && (
+            <div className="space-y-6">
+              <div>
+                <div className="mb-1 flex items-center gap-4 text-xs text-neutral-500">
+                  <Legend color="#5E8F45" label="Cash In" />
+                  <Legend color="#DC2626" label="Cash Out" />
+                </div>
+                <GroupedBars
+                  data={daily.map((d) => ({
+                    label: d.label,
+                    a: d.inflow,
+                    b: d.outflow,
+                  }))}
+                />
+              </div>
+              <div>
+                <p className="mb-1 text-xs text-neutral-500">
+                  Running cash balance over the period (opens at RM0)
+                </p>
+                <BreakEvenChart
+                  data={daily.map((d) => ({
+                    label: d.label,
+                    value: d.cumulative,
+                  }))}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className={`overflow-x-auto ${showCharts ? "mt-6" : ""}`}>
+            <table className="w-full text-sm">
+              <thead className="text-left text-neutral-500">
+                <tr>
+                  <th className="py-2 font-medium">Date</th>
+                  <th className="py-2 text-right font-medium">Cash In</th>
+                  <th className="py-2 text-right font-medium">Cash Out</th>
+                  <th className="py-2 text-right font-medium">Net</th>
+                  <th className="py-2 text-right font-medium">Balance</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {daily.map((d) => (
+                  <tr key={d.date}>
+                    <td className="py-2 font-medium">{fmtDay(d.date)}</td>
+                    <td className="py-2 text-right tabular-nums text-emerald-600">
+                      {d.inflow ? rm(d.inflow) : "—"}
+                    </td>
+                    <td className="py-2 text-right tabular-nums text-red-600">
+                      {d.outflow ? rm(d.outflow) : "—"}
+                    </td>
+                    <td
+                      className={`py-2 text-right font-medium tabular-nums ${signClass(d.net)}`}
+                    >
+                      {rm(d.net)}
+                    </td>
+                    <td
+                      className={`py-2 text-right font-semibold tabular-nums ${signClass(d.cumulative)}`}
+                    >
+                      {rm(d.cumulative)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-neutral-200 font-semibold text-neutral-900">
+                  <td className="py-2">Total</td>
+                  <td className="py-2 text-right tabular-nums">
+                    {rm(report.inflow)}
+                  </td>
+                  <td className="py-2 text-right tabular-nums">
+                    {rm(report.outflow)}
+                  </td>
+                  <td className={`py-2 text-right tabular-nums ${signClass(report.net)}`}>
+                    {rm(report.net)}
+                  </td>
+                  <td className={`py-2 text-right tabular-nums ${signClass(report.net)}`}>
+                    {rm(report.net)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <p className="mt-3 text-xs text-neutral-400">
+            Cash out is what the business actually paid that day — direct
+            purchases plus any reimbursements/creditors settled. Owner-fronted and
+            credit purchases only appear on their settlement day.
+          </p>
+        </>
+      )}
+    </section>
   );
 }
 

@@ -286,6 +286,13 @@ export async function GET(
       "Cost (RM)": g.cost,
       "Margin %": g.revenue > 0 ? Math.round(g.margin * 100) : 0,
     }));
+    const dailyCashflow = r.daily.map((d) => ({
+      Date: d.date,
+      "Cash In (RM)": d.inflow,
+      "Cash Out (RM)": d.outflow,
+      "Net (RM)": d.net,
+      "Running Balance (RM)": d.cumulative,
+    }));
     const occupancy = r.chairs.map((c) => {
       const row: Record<string, unknown> = { Chair: c.label };
       for (const h of r.hours) {
@@ -305,6 +312,7 @@ export async function GET(
     return workbookResponse(
       [
         { name: "Summary", rows: summary },
+        { name: "Daily Cashflow", rows: dailyCashflow },
         { name: "Revenue Split", rows: split },
         { name: "Occupancy %", rows: occupancy },
       ],

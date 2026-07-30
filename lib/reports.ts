@@ -11,6 +11,16 @@ export type RevenueGroup = {
 
 export type OccupancyCell = { chairId: string; hour: number; pct: number };
 
+// One row of the daily cashflow report.
+export type DailyCashflow = {
+  date: string; // YYYY-MM-DD (GMT+8)
+  label: string; // short day-of-month, for chart axes
+  inflow: number; // cash in (sales)
+  outflow: number; // cash out (business-paid purchases + reimbursements settled)
+  net: number; // inflow − outflow
+  cumulative: number; // running net across the period (opens at 0)
+};
+
 export type ReportPeriod = "day" | "month" | "range";
 
 export type DailyReport = {
@@ -30,6 +40,7 @@ export type DailyReport = {
   };
   sessionCount: number;
   avgPerSession: number;
+  daily: DailyCashflow[]; // one row per day in the range (cash-basis)
   split: { spa: RevenueGroup; coffee: RevenueGroup; extras: RevenueGroup };
   chairs: Chair[];
   occupancy: OccupancyCell[];
@@ -180,6 +191,50 @@ export async function computeReport(
   );
   const outflow = paidDirect + reimbSettled;
 
+  // ── Daily cashflow (cash-basis, one row per calendar day in GMT+8) ─────────
+  // Reuse the data already fetched: bucket cash in by sale_date, and cash out by
+  // the day the business actually paid (direct purchase date, or the day a
+  // reimbursement/creditor was settled). Running balance opens at 0.
+  const inflowByDate = new Map<string, number>();
+  for (const s of sales)
+    inflowByDate.set(
+      s.sale_date,
+      (inflowByDate.get(s.sale_date) ?? 0) + Number(s.total_amount),
+    );
+
+  const paidByDate = new Map<string, number>();
+  for (const e of expenses)
+    if (!REIMBURSABLE_PAYERS.includes(e.payer))
+      paidByDate.set(
+        e.expense_date,
+        (paidByDate.get(e.expense_date) ?? 0) + Number(e.amount),
+      );
+
+  const reimbByDate = new Map<string, number>();
+  for (const r of (settledReimbData ?? []) as {
+    amount: number;
+    settled_at: string;
+  }[]) {
+    const d = gmt8Date(r.settled_at);
+    reimbByDate.set(d, (reimbByDate.get(d) ?? 0) + Number(r.amount));
+  }
+
+  const daily: DailyCashflow[] = [];
+  {
+    let cur = new Date(`${startStr}T00:00:00+08:00`).getTime();
+    const lastMs = new Date(`${endStr}T00:00:00+08:00`).getTime();
+    let cumulative = 0;
+    while (cur <= lastMs) {
+      const d = gmt8Date(new Date(cur));
+      const inf = inflowByDate.get(d) ?? 0;
+      const out = (paidByDate.get(d) ?? 0) + (reimbByDate.get(d) ?? 0);
+      const net = inf - out;
+      cumulative += net;
+      daily.push({ date: d, label: d.slice(8, 10), inflow: inf, outflow: out, net, cumulative });
+      cur += 86_400_000; // GMT+8 has no DST, so a flat +24h steps one calendar day
+    }
+  }
+
   const saleIds = sales.map((s) => s.id);
   let items: SaleItem[] = [];
   if (saleIds.length) {
@@ -251,6 +306,7 @@ export async function computeReport(
     },
     sessionCount: sessions.length,
     avgPerSession: sessions.length ? inflow / sessions.length : 0,
+    daily,
     split: {
       spa: group(spaItems),
       coffee: group(coffeeItems),
