@@ -100,3 +100,36 @@ export type Reimbursement = {
 export type ChairWithSession = Chair & {
   session: Session | null;
 };
+
+// ── Chart of Accounts (0004) ────────────────────────────────────────────────
+export type AccountType =
+  | "header"
+  | "asset"
+  | "contra_asset"
+  | "liability"
+  | "equity"
+  | "revenue"
+  | "contra_revenue"
+  | "expense"
+  | "other_income";
+
+export type NormalBalance = "debit" | "credit" | null;
+export type StatementGroup = "balance_sheet" | "profit_loss" | "control";
+
+export type Account = {
+  id: string;
+  user_id: string | null;
+  code: string;
+  name: string;
+  account_type: AccountType;
+  normal_balance: NormalBalance;
+  parent_code: string | null;
+  description: string | null;
+  is_postable: boolean;
+  is_active: boolean;
+  system_locked: boolean;
+  statement_group: StatementGroup;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
