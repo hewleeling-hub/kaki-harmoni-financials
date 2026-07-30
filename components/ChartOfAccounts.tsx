@@ -12,10 +12,17 @@ import {
   ancestorCodes,
   withDepth,
 } from "@/lib/accounts";
+import { rm } from "@/lib/format";
 
 const TEAL = "#1F5A5E";
 
-export function ChartOfAccounts({ initial }: { initial: Account[] }) {
+export function ChartOfAccounts({
+  initial,
+  balances,
+}: {
+  initial: Account[];
+  balances?: Record<string, number> | null;
+}) {
   const [accounts, setAccounts] = useState<Account[]>(initial);
   const [q, setQ] = useState("");
   const [typeF, setTypeF] = useState("all");
@@ -213,7 +220,20 @@ export function ChartOfAccounts({ initial }: { initial: Account[] }) {
                   <td className="px-3 py-2 text-neutral-500">
                     {a.normal_balance ? (a.normal_balance === "debit" ? "Dr" : "Cr") : "—"}
                   </td>
-                  <td className="px-3 py-2 text-right text-neutral-300" title="Awaiting ledger">—</td>
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {balances
+                      ? (() => {
+                          const v = balances[a.code] ?? 0;
+                          if (Math.abs(v) < 0.005)
+                            return <span className="text-neutral-300">—</span>;
+                          return (
+                            <span className={v < 0 ? "text-red-600" : "text-neutral-700"}>
+                              {rm(v)}
+                            </span>
+                          );
+                        })()
+                      : <span className="text-neutral-300" title="Awaiting ledger">—</span>}
+                  </td>
                   <td className="px-3 py-2">
                     {isHeader ? (
                       <span className="text-xs text-neutral-400">Header</span>
@@ -256,9 +276,9 @@ export function ChartOfAccounts({ initial }: { initial: Account[] }) {
       </div>
 
       <p className="mt-3 text-xs text-neutral-400">
-        Balances are pending the posting ledger — accounts are a reference chart
-        for now. Header accounts can never receive postings; only active leaf
-        accounts will.
+        {balances
+          ? "Balances roll up from posted journals (natural sign; red = contra-normal). Header accounts total their sub-accounts."
+          : "Balances are pending the posting ledger — accounts are a reference chart for now. Header accounts can never receive postings; only active leaf accounts will."}
       </p>
 
       {drawer && (

@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ChartOfAccounts } from "@/components/ChartOfAccounts";
-import type { Account } from "@/lib/types";
+import { sumLines, rollUp, naturalBalance } from "@/lib/ledger";
+import type { Account, JournalLine } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -26,5 +27,20 @@ export default async function AccountsPage() {
     );
   }
 
-  return <ChartOfAccounts initial={(data ?? []) as Account[]} />;
+  const accounts = (data ?? []) as Account[];
+
+  // Real balances from the ledger, if it's been set up (0005). Degrades to null
+  // — the chart still renders "—" until the ledger exists.
+  let balances: Record<string, number> | null = null;
+  const { data: lines, error: lErr } = await supabase
+    .from("journal_lines")
+    .select("account_code, debit, credit");
+  if (!lErr && lines) {
+    const rolled = rollUp(accounts, sumLines(lines as unknown as JournalLine[]));
+    balances = {};
+    for (const a of accounts)
+      balances[a.code] = naturalBalance(a, rolled[a.code]?.net ?? 0);
+  }
+
+  return <ChartOfAccounts initial={accounts} balances={balances} />;
 }

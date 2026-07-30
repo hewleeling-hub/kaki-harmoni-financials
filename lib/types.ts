@@ -133,3 +133,29 @@ export type Account = {
   created_at: string;
   updated_at: string;
 };
+
+// ── Double-entry ledger (0005) ──────────────────────────────────────────────
+export type Journal = {
+  id: string;
+  user_id: string | null;
+  entry_date: string; // YYYY-MM-DD
+  memo: string | null;
+  reference: string | null;
+  source: string; // manual | reversal | sale | expense | adjustment
+  reverses: string | null;
+  reversed_by: string | null;
+  created_at: string;
+};
+
+export type JournalLine = {
+  id: string;
+  journal_id: string;
+  line_no: number;
+  account_code: string;
+  debit: number;
+  credit: number;
+  memo: string | null;
+};
+
+// A journal with its lines attached (for lists / detail).
+export type JournalWithLines = Journal & { lines: JournalLine[] };
