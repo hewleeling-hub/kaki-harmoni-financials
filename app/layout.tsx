@@ -1,10 +1,24 @@
 import type { Metadata } from "next";
+import { DM_Serif_Display, Inter } from "next/font/google";
 import "./globals.css";
-import { NavBar } from "@/components/NavBar";
-import { OfflineBanner } from "@/components/OfflineBanner";
+import { AppFrame } from "@/components/AppFrame";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
+const dmSerif = DM_Serif_Display({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-dm-serif",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
+  // Staff app default; the customer site (/visit) sets its own metadata.
   title: "Kaki Harmoni Financials",
   description:
     "Counter POS + bookkeeping for a 4-chair foot-spa café — chairs, sales, expenses, daily cashflow.",
@@ -17,14 +31,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="antialiased bg-[#F7F9FC] text-[#1F2937] min-h-screen">
+    <html lang="en" className={`${dmSerif.variable} ${inter.variable}`}>
+      <body className="antialiased min-h-screen">
         <ServiceWorkerRegister />
-        <OfflineBanner />
-        <NavBar />
-        <main className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6">
-          {children}
-        </main>
+        <AppFrame>{children}</AppFrame>
       </body>
     </html>
   );

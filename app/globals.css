@@ -1,1 +1,80 @@
 @import "tailwindcss";
+
+/* ------------------------------------------------------------------ *
+ * Kaki Harmoni — Warm & Friendly customer theme (brand tokens).
+ * These add NEW named utilities (bg-cream, text-olive, font-heading…)
+ * and do not alter any class the staff bookkeeping app already uses.
+ * ------------------------------------------------------------------ */
+@theme {
+  --color-cream: #f7f0e3; /* warm cream background   */
+  --color-ivory: #fffdf8; /* soft ivory surface      */
+  --color-olive: #667a55; /* primary olive green     */
+  --color-olive-dark: #3f4938; /* deep olive text    */
+  --color-beige: #e8d7bb; /* warm beige              */
+  --color-sage: #c9d2b8; /* pale sage               */
+  --color-peach: #efd6bd; /* soft peach              */
+  --color-brown: #7a5e45; /* muted brown             */
+  --color-ink: #3e392f; /* primary text            */
+  --color-muted: #716a5e; /* secondary text          */
+  --color-line: #ddd0bb; /* borders                 */
+  --color-success: #6f875c; /* success               */
+  --color-gold: #d3a85b; /* promo / highlight        */
+
+  --font-heading: var(--font-dm-serif), Georgia, "Times New Roman", serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-warm: 0 8px 24px rgba(92, 73, 48, 0.08);
+  --shadow-warm-lg: 0 14px 40px rgba(92, 73, 48, 0.12);
+}
+
+/* All customer styling is scoped under .visit-scope so the staff app
+ * (which lives at every non-/visit route) is completely unaffected. */
+.visit-scope {
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.visit-scope :where(h1, h2, h3, h4) {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.12;
+}
+
+/* Clear, visible focus for keyboard + older users. */
+.visit-scope
+  :where(a, button, [role="button"], input, select, textarea, summary):focus-visible {
+  outline: 3px solid var(--color-olive);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Gentle entrance — small fade + rise only. */
+@keyframes visit-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.visit-scope .fade-up {
+  animation: visit-fade-up 320ms ease-out both;
+}
+
+/* Respect reduced-motion: no distracting movement for older users. */
+@media (prefers-reduced-motion: reduce) {
+  .visit-scope .fade-up {
+    animation: none;
+  }
+  .visit-scope *,
+  .visit-scope *::before,
+  .visit-scope *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
