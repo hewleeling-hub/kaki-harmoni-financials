@@ -159,3 +159,14 @@ export type JournalLine = {
 
 // A journal with its lines attached (for lists / detail).
 export type JournalWithLines = Journal & { lines: JournalLine[] };
+
+// ── Budget vs Actual (0006) ─────────────────────────────────────────────────
+export type Budget = {
+  id: string;
+  user_id: string | null;
+  account_code: string;
+  fiscal_year: number;
+  amount: number; // monthly budget (RM)
+  created_at: string;
+  updated_at: string;
+};
