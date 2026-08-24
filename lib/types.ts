@@ -68,6 +68,7 @@ export type Expense = {
   id: string;
   user_id: string | null;
   created_at: string;
+  po_number: string | null;
   expense_date: string;
   vendor: string;
   description: string | null;
@@ -89,6 +90,7 @@ export type Reimbursement = {
   id: string;
   user_id: string | null;
   created_at: string;
+  pv_number: string | null;
   expense_id: string;
   owed_to: string;
   amount: number;

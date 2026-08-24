@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Reimbursement } from "@/lib/types";
-import { rm } from "@/lib/format";
+import { rm, gmt8Date } from "@/lib/format";
 import { ExportButton } from "@/components/ExportButton";
 
 type ReimbursementRow = Reimbursement & {
@@ -123,6 +123,8 @@ export function ReimbursementsList() {
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-left text-neutral-500">
               <tr>
+                <th className="px-4 py-3 font-medium">PV No.</th>
+                <th className="px-4 py-3 font-medium">Date</th>
                 <th className="px-4 py-3 font-medium">Owed to</th>
                 <th className="px-4 py-3 text-right font-medium">Amount</th>
                 <th className="px-4 py-3 font-medium">Status</th>
@@ -135,6 +137,18 @@ export function ReimbursementsList() {
                 const stale = !r.is_settled && age > SEVEN_DAYS;
                 return (
                   <tr key={r.id}>
+                    <td className="px-4 py-3 font-mono text-xs text-neutral-500">
+                      {r.pv_number ?? "—"}
+                    </td>
+                    {/* The voucher is dated the day the money was actually paid
+                        back, so an unsettled claim has no date yet. */}
+                    <td className="px-4 py-3 text-neutral-600">
+                      {r.settled_at ? (
+                        gmt8Date(r.settled_at)
+                      ) : (
+                        <span className="text-neutral-400">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-medium">
                       {r.owed_to}
                       {stale && (
