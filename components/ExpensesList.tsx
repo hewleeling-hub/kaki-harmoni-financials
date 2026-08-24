@@ -188,6 +188,7 @@ export function ExpensesList() {
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-left text-neutral-500">
               <tr>
+                <th className="px-4 py-3 font-medium">PO No.</th>
                 <th className="px-4 py-3 font-medium">Date</th>
                 <th className="px-4 py-3 font-medium">Vendor</th>
                 <th className="px-4 py-3 font-medium">Category</th>
@@ -201,6 +202,9 @@ export function ExpensesList() {
             <tbody className="divide-y divide-neutral-100">
               {filtered.map((e) => (
                 <tr key={e.id}>
+                  <td className="px-4 py-3 font-mono text-xs text-neutral-500">
+                    {e.po_number ?? "—"}
+                  </td>
                   <td className="px-4 py-3 text-neutral-600">
                     {e.expense_date}
                   </td>
@@ -278,12 +282,23 @@ export function ExpensesList() {
                     {rm(e.amount)}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/expenses/${e.id}/edit`}
-                      className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50"
-                    >
-                      Edit
-                    </Link>
+                    <div className="flex justify-end gap-1">
+                      {REIMBURSABLE_PAYERS.includes(e.payer) && (
+                        <Link
+                          href={`/expenses/${e.id}/voucher`}
+                          className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50"
+                          title="Petty cash voucher"
+                        >
+                          Voucher
+                        </Link>
+                      )}
+                      <Link
+                        href={`/expenses/${e.id}/edit`}
+                        className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50"
+                      >
+                        Edit
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))}

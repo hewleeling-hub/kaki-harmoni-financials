@@ -75,6 +75,7 @@ export async function GET(
       return `${url.origin}/api/receipts/view?path=${encodeURIComponent(v)}`;
     };
     const rows = (data ?? []).map((e) => ({
+      "PO No.": e.po_number ?? "",
       Date: e.expense_date,
       Vendor: e.vendor,
       Description: e.description ?? "",
@@ -141,6 +142,9 @@ export async function GET(
     const rows = list.map((r) => {
       const e = expById.get(r.expense_id);
       return {
+        "PV No.": r.pv_number ?? "",
+        // The voucher date — blank until the money has actually been paid back.
+        Date: r.settled_at ? gmt8Date(r.settled_at) : "",
         "Owed To": r.owed_to,
         Vendor: e?.vendor ?? "",
         "Amount (RM)": Number(r.amount),
