@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import type { Reimbursement } from "@/lib/types";
 import { rm, gmt8Date } from "@/lib/format";
 import { ExportButton } from "@/components/ExportButton";
@@ -138,7 +139,17 @@ export function ReimbursementsList() {
                 return (
                   <tr key={r.id}>
                     <td className="px-4 py-3 font-mono text-xs text-neutral-500">
-                      {r.pv_number ?? "—"}
+                      {r.pv_number ? (
+                        <Link
+                          href={`/expenses/${r.expense_id}/voucher`}
+                          className="text-emerald-700 underline underline-offset-2"
+                          title="Open the petty cash voucher"
+                        >
+                          {r.pv_number}
+                        </Link>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     {/* The voucher is dated the day the money was actually paid
                         back, so an unsettled claim has no date yet. */}
