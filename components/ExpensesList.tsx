@@ -203,7 +203,17 @@ export function ExpensesList() {
               {filtered.map((e) => (
                 <tr key={e.id}>
                   <td className="px-4 py-3 font-mono text-xs text-neutral-500">
-                    {e.po_number ?? "—"}
+                    {REIMBURSABLE_PAYERS.includes(e.payer) ? (
+                      <Link
+                        href={`/expenses/${e.id}/voucher`}
+                        className="text-emerald-700 underline underline-offset-2"
+                        title="Open the petty cash voucher"
+                      >
+                        {e.po_number ?? "voucher"}
+                      </Link>
+                    ) : (
+                      (e.po_number ?? "—")
+                    )}
                   </td>
                   <td className="px-4 py-3 text-neutral-600">
                     {e.expense_date}
