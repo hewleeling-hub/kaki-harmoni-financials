@@ -172,3 +172,21 @@ export type Budget = {
   created_at: string;
   updated_at: string;
 };
+
+export type SupplierNoteType = "debit" | "credit";
+
+export type SupplierNote = {
+  id: string;
+  user_id: string | null;
+  created_at: string;
+  note_number: string | null;
+  note_type: SupplierNoteType;
+  note_date: string;
+  expense_id: string | null;
+  vendor: string;
+  amount: number;
+  reason: string | null;
+  description: string | null;
+  status: "open" | "applied";
+  applied_at: string | null;
+};

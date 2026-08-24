@@ -82,3 +82,20 @@ export const CLOSE_HOUR = 20;
 
 export type ChairStatus = "free" | "running" | "resting";
 export type SessionStatus = "running" | "resting" | "completed";
+
+// Supplier-side debit/credit notes. A debit note claims money back from a
+// supplier; a credit note records a reduction the supplier has granted us.
+export const NOTE_TYPES = [
+  { value: "debit", label: "Debit note" },
+  { value: "credit", label: "Credit note" },
+] as const;
+
+export const NOTE_REASONS = [
+  "goods_returned",
+  "damaged_or_faulty",
+  "overcharged",
+  "short_delivery",
+  "price_adjustment",
+  "cancelled_order",
+  "other",
+] as const;
