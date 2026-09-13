@@ -19,17 +19,37 @@ export function PettyCashVoucher({
   expense: Expense;
   reimbursement: Reimbursement | null;
 }) {
-  const paidTo =
-    reimbursement?.owed_to ??
-    PAYERS.find((p) => p.value === expense.payer)?.label ??
-    expense.payer.replace(/_/g, " ");
+  // Two kinds of petty cash voucher:
+  //   direct      — cash handed straight out of the tin (wages, a taxi). The
+  //                 money has already moved, so the voucher is dated the day
+  //                 of the payment and made out to whoever received it.
+  //   reimbursement — someone fronted the money and is owed it back. Dated the
+  //                 day it was actually repaid, which is blank until settled.
+  const isDirect = expense.payer === "petty_cash" && !reimbursement;
 
-  // The voucher is dated the day the money was actually paid back. Until the
-  // reimbursement is settled there is no such date, so the line prints blank
-  // for it to be written in when the cash changes hands.
-  const settledDate = reimbursement?.settled_at
-    ? gmt8Date(reimbursement.settled_at)
-    : null;
+  const pvNumber = reimbursement?.pv_number ?? expense.pv_number;
+
+  const paidTo = isDirect
+    ? expense.vendor
+    : (reimbursement?.owed_to ??
+      PAYERS.find((p) => p.value === expense.payer)?.label ??
+      expense.payer.replace(/_/g, " "));
+
+  const voucherDate = isDirect
+    ? expense.expense_date
+    : reimbursement?.settled_at
+      ? gmt8Date(reimbursement.settled_at)
+      : null;
+
+  // "Paid to" already names the payee on a direct voucher, so the second field
+  // says what the money was for instead of repeating the name.
+  const beingForLabel = isDirect ? "Being payment for" : "Being reimbursement for";
+  // Only the category fallback needs capitalising — a description the user
+  // typed is left exactly as they wrote it.
+  const beingFor = isDirect
+    ? expense.description || null
+    : expense.vendor;
+  const beingForFallback = expense.category.replace(/_/g, " ");
 
   const lineItems = expense.line_items ?? [];
   const itemised = lineItems.length > 0;
@@ -52,7 +72,7 @@ export function PettyCashVoucher({
           <h1 className="text-xl font-bold tracking-tight">Petty Cash Voucher</h1>
         </div>
         <div className="flex items-center gap-3">
-          {!settledDate && (
+          {!isDirect && !voucherDate && (
             <p className="text-sm text-amber-700">
               Not reimbursed yet — the date line prints blank.
             </p>
@@ -86,13 +106,13 @@ export function PettyCashVoucher({
                 <tr>
                   <td className="pr-3 text-neutral-500">PV No.</td>
                   <td className="font-mono font-semibold">
-                    {reimbursement?.pv_number ?? <Blank />}
+                    {pvNumber ?? <Blank />}
                   </td>
                 </tr>
                 <tr>
                   <td className="pr-3 text-neutral-500">Date</td>
                   <td className="font-mono font-semibold">
-                    {settledDate ?? <Blank />}
+                    {voucherDate ?? <Blank />}
                   </td>
                 </tr>
               </tbody>
@@ -106,8 +126,10 @@ export function PettyCashVoucher({
             <p className="text-base font-semibold">{paidTo}</p>
           </div>
           <div>
-            <span className="text-neutral-500">Being reimbursement for</span>
-            <p className="font-semibold">{expense.vendor}</p>
+            <span className="text-neutral-500">{beingForLabel}</span>
+            <p className={`font-semibold ${beingFor ? "" : "capitalize"}`}>
+              {beingFor ?? beingForFallback}
+            </p>
           </div>
           <div>
             <span className="text-neutral-500">PO No.</span>
