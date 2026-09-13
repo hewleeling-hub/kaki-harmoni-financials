@@ -69,6 +69,9 @@ export type Expense = {
   user_id: string | null;
   created_at: string;
   po_number: string | null;
+  // Set only for cash paid straight from the tin (payer = 'petty_cash');
+  // reimbursed purchases carry their PV number on the reimbursement row.
+  pv_number: string | null;
   expense_date: string;
   vendor: string;
   description: string | null;

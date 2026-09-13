@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Expense } from "@/lib/types";
 import { PAYERS, EXPENSE_TYPES, REIMBURSABLE_PAYERS } from "@/lib/constants";
+
+// A purchase has a petty cash voucher when someone fronted the money (and is
+// owed it back) or when cash was handed over directly from the tin.
+const hasVoucher = (payer: string) =>
+  REIMBURSABLE_PAYERS.includes(payer) || payer === "petty_cash";
 import { rm } from "@/lib/format";
 import { ExportButton } from "@/components/ExportButton";
 
@@ -203,7 +208,7 @@ export function ExpensesList() {
               {filtered.map((e) => (
                 <tr key={e.id}>
                   <td className="px-4 py-3 font-mono text-xs text-neutral-500">
-                    {REIMBURSABLE_PAYERS.includes(e.payer) ? (
+                    {hasVoucher(e.payer) ? (
                       <Link
                         href={`/expenses/${e.id}/voucher`}
                         className="text-emerald-700 underline underline-offset-2"
@@ -293,7 +298,7 @@ export function ExpensesList() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
-                      {REIMBURSABLE_PAYERS.includes(e.payer) && (
+                      {hasVoucher(e.payer) && (
                         <Link
                           href={`/expenses/${e.id}/voucher`}
                           className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50"
