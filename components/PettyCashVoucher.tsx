@@ -77,6 +77,14 @@ export function PettyCashVoucher({
               Not reimbursed yet — the date line prints blank.
             </p>
           )}
+          {/* A download works on a device with no printer configured, where
+              the browser's Print dialog has nothing to send to. */}
+          <a
+            href={`/api/expenses/${expense.id}/voucher-pdf`}
+            className="rounded-md border border-neutral-300 px-4 py-1.5 text-sm font-medium hover:bg-neutral-50"
+          >
+            Download PDF
+          </a>
           <button
             onClick={() => window.print()}
             className="rounded-md bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-emerald-700"
