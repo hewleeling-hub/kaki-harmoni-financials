@@ -35,6 +35,11 @@ export async function PATCH(
   if (!EXPENSE_TYPES.some((t) => t.value === expense_type))
     return NextResponse.json({ error: "Invalid expense type" }, { status: 400 });
 
+  // A subscription term only makes sense as a positive whole number of months.
+  const rawMonths = Number(body.subscription_months);
+  const subscription_months =
+    Number.isFinite(rawMonths) && rawMonths > 0 ? Math.floor(rawMonths) : null;
+
   const supabase = createAdminClient();
 
   const lineItems = Array.isArray(body.line_items)
@@ -56,6 +61,7 @@ export async function PATCH(
     category,
     payer,
     expense_type,
+    subscription_months,
     receipt_url: body.receipt_url ? String(body.receipt_url) : null,
     line_items: lineItems,
     comments: body.comments ? String(body.comments) : null,
@@ -65,7 +71,7 @@ export async function PATCH(
 
   let { error } = await supabase.from("expenses").update(patch).eq("id", id);
   if (error) {
-    const missing = ["line_items", "comments"].filter((c) =>
+    const missing = ["line_items", "comments", "subscription_months"].filter((c) =>
       new RegExp(c, "i").test(error!.message),
     );
     if (missing.length) {

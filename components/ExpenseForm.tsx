@@ -9,6 +9,7 @@ import {
   EXPENSE_TYPES,
   REIMBURSABLE_PAYERS,
 } from "@/lib/constants";
+import { amortise, isSubscription } from "@/lib/posting";
 import { today, rm } from "@/lib/format";
 import type { Expense } from "@/lib/types";
 
@@ -34,6 +35,9 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
     category: initial ? (initCatCustom ? "other" : initial.category) : "supplies",
     payer: initial?.payer ?? "company",
     expense_type: initType,
+    subscription_months: initial?.subscription_months
+      ? String(initial.subscription_months)
+      : "12",
     comments: initial?.comments ?? "",
   });
   const [error, setError] = useState<string | null>(null);
@@ -214,6 +218,11 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
           ...form,
           category: effectiveCategory(),
           amount: amt,
+          // Only meaningful for a subscription; null everywhere else so an old
+          // term can't linger after the category changes.
+          subscription_months: isSubscription(effectiveCategory())
+            ? Number(form.subscription_months) || null
+            : null,
           receipt_url: receiptPath,
           line_items: lineItems
             .filter((li) => li.description.trim())
@@ -385,6 +394,40 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
             <span className="mt-1 block text-xs text-neutral-400">
               Leave blank to just record it as &ldquo;Other&rdquo;.
             </span>
+          </label>
+        )}
+
+        {/* A prepaid subscription buys coverage over a period, so the term is
+            what lets the cost be spread across the months it covers. */}
+        {isSubscription(effectiveCategory()) && (
+          <label className="block text-sm">
+            <span className="mb-1 block text-neutral-600">
+              Subscription term (months)
+            </span>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={form.subscription_months}
+              onChange={(e) => set("subscription_months", e.target.value)}
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2"
+            />
+            {(() => {
+              const a = amortise(
+                Number(form.amount) || 0,
+                Number(form.subscription_months),
+                form.expense_date,
+              );
+              return a ? (
+                <span className="mt-1 block text-xs text-neutral-500">
+                  {rm(a.perMonth)}/month · covers {a.startDate} to {a.endDate}
+                </span>
+              ) : (
+                <span className="mt-1 block text-xs text-neutral-400">
+                  Enter a term to see the monthly charge.
+                </span>
+              );
+            })()}
           </label>
         )}
 
