@@ -57,6 +57,11 @@ export async function POST(req: Request) {
   if (!EXPENSE_TYPES.some((t) => t.value === expense_type))
     return NextResponse.json({ error: "Invalid expense type" }, { status: 400 });
 
+  // A subscription term only makes sense as a positive whole number of months.
+  const rawMonths = Number(body.subscription_months);
+  const subscription_months =
+    Number.isFinite(rawMonths) && rawMonths > 0 ? Math.floor(rawMonths) : null;
+
   const supabase = createAdminClient();
   const suggestion = suggestExpenseCategory(vendor, body.description);
 
@@ -80,6 +85,7 @@ export async function POST(req: Request) {
     category,
     payer,
     expense_type,
+    subscription_months,
     receipt_url: body.receipt_url ? String(body.receipt_url) : null,
     line_items: lineItems,
     comments: body.comments ? String(body.comments) : null,
@@ -95,7 +101,7 @@ export async function POST(req: Request) {
   // If an optional column isn't present yet (migration not applied), drop just
   // the offending field(s) and retry so the core save still works.
   if (error) {
-    const missing = ["line_items", "comments"].filter((c) =>
+    const missing = ["line_items", "comments", "subscription_months"].filter((c) =>
       new RegExp(c, "i").test(error!.message),
     );
     if (missing.length) {

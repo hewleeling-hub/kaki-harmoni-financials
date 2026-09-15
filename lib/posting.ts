@@ -42,6 +42,9 @@ const ASSET_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   computer: "1560",
   printer: "1560",
   shop_renovation: "1590", // Renovation and Fit-Out
+  // Paid up front, so it buys coverage over a period rather than being spent
+  // on the day — an asset until the months it covers have passed.
+  subscription: "1350", // Prepaid Software Subscriptions
   // electrical_equipment and other are ambiguous — could be air-conditioning,
   // POS, security or fit-out. Left for the user to pick.
 };
@@ -119,4 +122,59 @@ export function postingReference(expense: Expense): string {
 export function postingMemo(expense: Expense): string {
   const what = expense.description || expense.category.replace(/_/g, " ");
   return `${expense.vendor} — ${what}`.slice(0, 300);
+}
+
+// ── subscriptions ───────────────────────────────────────────────────────────
+
+/** True when this purchase is a prepaid subscription, whatever its type. */
+export function isSubscription(category: string): boolean {
+  return key(category) === "subscription";
+}
+
+export type Amortisation = {
+  months: number;
+  /** Charge per month, rounded to sen. */
+  perMonth: number;
+  /** First and last month the subscription covers, as YYYY-MM-DD. */
+  startDate: string;
+  endDate: string;
+};
+
+/**
+ * How a prepaid subscription spreads across the months it covers.
+ *
+ * The term runs from the purchase date, so a 12-month subscription bought on
+ * 2026-09-13 covers up to 2027-09-12 — the day before the anniversary, not the
+ * anniversary itself.
+ */
+export function amortise(
+  amount: number,
+  months: number | null | undefined,
+  startDate: string,
+): Amortisation | null {
+  const n = Number(months);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  const start = new Date(`${startDate}T00:00:00Z`);
+  if (Number.isNaN(start.getTime())) return null;
+
+  // Adding months naively overflows: 31 Jan + 1 month becomes 3 March, because
+  // 31 February doesn't exist and JS rolls forward. Move the month on the 1st,
+  // then clamp the day to one that exists in the target month.
+  const end = new Date(start);
+  const day = start.getUTCDate();
+  end.setUTCDate(1);
+  end.setUTCMonth(end.getUTCMonth() + n);
+  const lastDayOfMonth = new Date(
+    Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0),
+  ).getUTCDate();
+  end.setUTCDate(Math.min(day, lastDayOfMonth));
+  // The term covers up to the day before the anniversary.
+  end.setUTCDate(end.getUTCDate() - 1);
+
+  return {
+    months: n,
+    perMonth: Math.round((Number(amount) / n) * 100) / 100,
+    startDate,
+    endDate: end.toISOString().slice(0, 10),
+  };
 }

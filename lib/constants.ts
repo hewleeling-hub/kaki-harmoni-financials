@@ -53,6 +53,7 @@ export const EXPENSE_TYPES = [
 // Asset classes shown as the "category" when the type is Fixed Asset. Stored in
 // the same category text column; "Other" allows a custom class.
 export const ASSET_CATEGORIES = [
+  "subscription",
   "kitchen_equipment",
   "spa_machine",
   "furniture_and_fittings",

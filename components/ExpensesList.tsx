@@ -10,6 +10,7 @@ import { PAYERS, EXPENSE_TYPES, REIMBURSABLE_PAYERS } from "@/lib/constants";
 const hasVoucher = (payer: string) =>
   REIMBURSABLE_PAYERS.includes(payer) || payer === "petty_cash";
 import { rm } from "@/lib/format";
+import { amortise } from "@/lib/posting";
 import { ExportButton } from "@/components/ExportButton";
 import { PostToLedger } from "@/components/PostToLedger";
 
@@ -253,6 +254,21 @@ export function ExpensesList() {
                         {e.description}
                       </div>
                     )}
+                    {/* A prepaid subscription is spread over the months it
+                        covers, so show the term and the monthly charge. */}
+                    {(() => {
+                      const a = amortise(
+                        Number(e.amount),
+                        e.subscription_months,
+                        e.expense_date,
+                      );
+                      return a ? (
+                        <div className="text-xs text-sky-700">
+                          {a.months}-month subscription · {rm(a.perMonth)}/mo ·
+                          to {a.endDate}
+                        </div>
+                      ) : null;
+                    })()}
                     {e.line_items && e.line_items.length > 0 && (
                       <ul className="mt-1 space-y-0.5 border-l-2 border-neutral-100 pl-2 text-xs text-neutral-500">
                         {e.line_items.map((li, i) => (

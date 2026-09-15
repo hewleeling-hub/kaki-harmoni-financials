@@ -72,6 +72,8 @@ export type Expense = {
   // Set only for cash paid straight from the tin (payer = 'petty_cash');
   // reimbursed purchases carry their PV number on the reimbursement row.
   pv_number: string | null;
+  // Term of a prepaid subscription, in months from expense_date. Null otherwise.
+  subscription_months: number | null;
   expense_date: string;
   vendor: string;
   description: string | null;
