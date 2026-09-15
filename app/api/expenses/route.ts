@@ -15,7 +15,18 @@ export async function GET() {
     .order("created_at", { ascending: false });
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ expenses: data });
+
+  // Flag which purchases have already reached the ledger, so the list can show
+  // what still needs posting without a request per row.
+  const { data: journals } = await supabase
+    .from("journals")
+    .select("expense_id")
+    .not("expense_id", "is", null);
+  const posted = new Set((journals ?? []).map((j) => j.expense_id as string));
+
+  return NextResponse.json({
+    expenses: (data ?? []).map((e) => ({ ...e, posted: posted.has(e.id) })),
+  });
 }
 
 export async function POST(req: Request) {

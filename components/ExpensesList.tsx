@@ -11,6 +11,7 @@ const hasVoucher = (payer: string) =>
   REIMBURSABLE_PAYERS.includes(payer) || payer === "petty_cash";
 import { rm } from "@/lib/format";
 import { ExportButton } from "@/components/ExportButton";
+import { PostToLedger } from "@/components/PostToLedger";
 
 // Payment status of a purchase: business-paid vs owed (owner-fronted/creditor).
 function payStatus(e: Expense): {
@@ -38,11 +39,15 @@ export function ExpensesList() {
   const [yearFilter, setYearFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [postingId, setPostingId] = useState<string | null>(null);
 
-  useEffect(() => {
+  function load() {
     fetch("/api/expenses", { cache: "no-store" })
       .then((r) => r.json())
       .then((j) => setExpenses(j.expenses ?? []));
+  }
+  useEffect(() => {
+    load();
   }, []);
 
   const filtered = useMemo(() => {
@@ -200,6 +205,7 @@ export function ExpensesList() {
                 <th className="px-4 py-3 font-medium">Payer</th>
                 <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Ledger</th>
                 <th className="px-4 py-3 text-right font-medium">Amount</th>
                 <th className="px-4 py-3 font-medium"></th>
               </tr>
@@ -293,6 +299,20 @@ export function ExpensesList() {
                       {payStatus(e).label}
                     </span>
                   </td>
+                  <td className="px-4 py-3">
+                    {e.posted ? (
+                      <span className="text-xs font-medium text-emerald-700">
+                        Posted
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setPostingId(e.id)}
+                        className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50"
+                      >
+                        Post
+                      </button>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right font-semibold">
                     {rm(e.amount)}
                   </td>
@@ -320,6 +340,17 @@ export function ExpensesList() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {postingId && (
+        <PostToLedger
+          expenseId={postingId}
+          onClose={() => setPostingId(null)}
+          onPosted={() => {
+            setPostingId(null);
+            load();
+          }}
+        />
       )}
     </div>
   );

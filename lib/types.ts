@@ -87,6 +87,8 @@ export type Expense = {
   ai_category_confidence: number | null;
   ai_category_review_status: string | null;
   comments?: string | null;
+  // Attached by GET /api/expenses — true once a journal posts this purchase.
+  posted?: boolean;
 };
 
 export type Reimbursement = {
