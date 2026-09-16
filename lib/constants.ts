@@ -25,6 +25,7 @@ export const EXPENSE_CATEGORIES = [
   "operating_expenses",
   "maintenance",
   "utilities",
+  "mobile_charges_and_internet",
   "rent",
   "equipment",
   "marketing",

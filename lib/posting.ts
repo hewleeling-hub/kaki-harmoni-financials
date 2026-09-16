@@ -54,6 +54,7 @@ const EXPENSE_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   wages: "6110", // Salaries and Wages
   rent: "6210", // Rent and Service Charges
   maintenance: "6280", // Repairs and Maintenance
+  mobile_charges_and_internet: "6240", // Internet and Telephone
   marketing: "6310", // Digital Advertising
   transport: "6740", // Travel and Transport
   petrol: "6740",
@@ -62,7 +63,8 @@ const EXPENSE_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   other: "6790", // Miscellaneous Administrative Expense
   // Deliberately unmapped, because the chart is more specific than the
   // category and guessing would misstate the P&L:
-  //   utilities          → electricity / water / internet are separate accounts
+  //   utilities          → electricity and water are separate accounts (phone
+  //                        and internet have their own category)
   //   supplies           → cleaning supplies vs office stationery
   //   cost_of_goods      → coffee / milk / food / packaging are separate
   //   operating_expenses → too broad to place
