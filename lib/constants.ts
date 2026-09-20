@@ -61,7 +61,7 @@ export const STOCK_CATEGORIES = [
   "tea_and_beverage",
   "milk_and_chilled",
   "food",
-  "essential_oils",
+  "essential_oils_and_salts",
   "retail_merchandise",
   "packaging",
   "operating_consumables",

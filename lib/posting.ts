@@ -58,7 +58,8 @@ export const STOCK_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   tea_and_beverage: "1220", // Tea and Beverage Inventory
   milk_and_chilled: "1230", // Milk and Chilled Ingredients Inventory
   food: "1240", // Food Inventory
-  essential_oils: "1250", // Essential Oils Inventory
+  // Oils and bath salts go into the same soak and are counted together.
+  essential_oils_and_salts: "1250", // Essential Oils Inventory
   retail_merchandise: "1260", // Retail Merchandise Inventory
   packaging: "1270", // Packaging Inventory
   operating_consumables: "1280", // Operating Consumables Inventory
@@ -214,7 +215,7 @@ export function amortise(
  *
  * Two classes are deliberately absent because the right account depends on how
  * the business actually uses them, and a wrong one misstates gross margin:
- *   essential_oils         → used in treatments (5110) or sold (5310)?
+ *   essential_oils_and_salts → used in treatments (5110) or sold (5310)?
  *   operating_consumables  → cost of sales (5130) or general overhead?
  */
 export const COGS_ACCOUNT_BY_STOCK_CLASS: Record<string, string> = {
