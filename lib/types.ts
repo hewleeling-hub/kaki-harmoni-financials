@@ -78,6 +78,8 @@ export type Expense = {
   vendor: string;
   description: string | null;
   amount: number;
+  // Discount given on the purchase. `amount` is already net of it.
+  discount: number;
   line_items?: LineItem[];
   category: string;
   payer: string;

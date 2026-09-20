@@ -57,6 +57,13 @@ export async function POST(req: Request) {
   if (!EXPENSE_TYPES.some((t) => t.value === expense_type))
     return NextResponse.json({ error: "Invalid expense type" }, { status: 400 });
 
+  // Recorded alongside the amount, which is already net of it.
+  const rawDiscount = Number(body.discount);
+  const discount =
+    Number.isFinite(rawDiscount) && rawDiscount > 0
+      ? Math.round(rawDiscount * 100) / 100
+      : 0;
+
   // A subscription term only makes sense as a positive whole number of months.
   const rawMonths = Number(body.subscription_months);
   const subscription_months =
@@ -86,6 +93,7 @@ export async function POST(req: Request) {
     payer,
     expense_type,
     subscription_months,
+    discount,
     receipt_url: body.receipt_url ? String(body.receipt_url) : null,
     line_items: lineItems,
     comments: body.comments ? String(body.comments) : null,
@@ -101,7 +109,7 @@ export async function POST(req: Request) {
   // If an optional column isn't present yet (migration not applied), drop just
   // the offending field(s) and retry so the core save still works.
   if (error) {
-    const missing = ["line_items", "comments", "subscription_months"].filter((c) =>
+    const missing = ["line_items", "comments", "subscription_months", "discount"].filter((c) =>
       new RegExp(c, "i").test(error!.message),
     );
     if (missing.length) {
