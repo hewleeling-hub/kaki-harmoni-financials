@@ -74,6 +74,8 @@ export type Expense = {
   pv_number: string | null;
   // Term of a prepaid subscription, in months from expense_date. Null otherwise.
   subscription_months: number | null;
+  // Account a subscription's monthly slice is charged to, once chosen.
+  amortisation_account: string | null;
   expense_date: string;
   vendor: string;
   description: string | null;
@@ -229,4 +231,16 @@ export type StockTakeRow = {
   consumed: number;
   inventoryAccount: string | null;
   cogsAccount: string | null;
+};
+
+/** One month of a prepaid subscription, released from prepaid to the P&L. */
+export type SubscriptionCharge = {
+  id: string;
+  expense_id: string;
+  /** First day of the calendar month charged. */
+  period: string;
+  amount: number;
+  expense_account: string;
+  journal_id: string | null;
+  created_at: string;
 };

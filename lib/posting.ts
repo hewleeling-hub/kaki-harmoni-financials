@@ -10,6 +10,7 @@
 // misstates the books, so anything ambiguous returns null and the UI makes the
 // user choose before it will post.
 
+import { amortisationSchedule } from "./amortisation";
 import type { Expense } from "./types";
 
 /**
@@ -201,12 +202,40 @@ export function amortise(
   // The term covers up to the day before the anniversary.
   end.setUTCDate(end.getUTCDate() - 1);
 
+  // One source of truth for the slices: the schedule that actually gets posted.
+  // Its first month is the figure to show, since the odd sen go to the earliest
+  // months — quoting a divided-and-rounded number instead would differ from
+  // what the ledger ends up carrying.
+  const schedule = amortisationSchedule(amount, n, startDate);
+  if (!schedule.length) return null;
+
   return {
     months: n,
-    perMonth: Math.round((Number(amount) / n) * 100) / 100,
+    perMonth: schedule[0].amount,
     startDate,
     endDate: end.toISOString().slice(0, 10),
   };
+}
+
+/**
+ * Where a subscription's monthly slice is charged, by the prepaid account the
+ * purchase was posted to.
+ *
+ * 1340 Prepaid Domain and Hosting is deliberately absent: a domain renewal
+ * belongs in 6510 Domain Registration Fees and hosting in 6520 Web Hosting and
+ * Cloud Services, and the prepaid account alone doesn't say which. The user
+ * picks once and it is remembered on the purchase.
+ */
+export const AMORTISATION_ACCOUNT_BY_PREPAID: Record<string, string> = {
+  "1350": "6440", // Prepaid Software Subscriptions → Software and SaaS Subscriptions
+  "1310": "6210", // Prepaid Rent → Rent and Service Charges
+};
+
+export function amortisationAccountForPrepaid(
+  prepaidAccount: string | null | undefined,
+): string | null {
+  if (!prepaidAccount) return null;
+  return AMORTISATION_ACCOUNT_BY_PREPAID[prepaidAccount] ?? null;
 }
 
 // ── stock takes ─────────────────────────────────────────────────────────────
