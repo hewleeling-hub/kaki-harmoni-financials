@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   EXPENSE_CATEGORIES,
   ASSET_CATEGORIES,
+  STOCK_CATEGORIES,
   PAYERS,
   EXPENSE_TYPES,
   REIMBURSABLE_PAYERS,
@@ -13,9 +14,19 @@ import { amortise, isSubscription } from "@/lib/posting";
 import { today, rm } from "@/lib/format";
 import type { Expense } from "@/lib/types";
 
-// Category options depend on the expense type: expense categories vs asset classes.
+// Category options depend on the expense type: running costs, stock classes or
+// asset classes.
 function categoryOptionsFor(type: string): readonly string[] {
-  return type === "fixed_asset" ? ASSET_CATEGORIES : EXPENSE_CATEGORIES;
+  if (type === "fixed_asset") return ASSET_CATEGORIES;
+  if (type === "stock") return STOCK_CATEGORIES;
+  return EXPENSE_CATEGORIES;
+}
+
+// What the category field is called for each type.
+function categoryLabel(type: string): string {
+  if (type === "fixed_asset") return "Asset class";
+  if (type === "stock") return "Stock class";
+  return "Category";
 }
 
 export function ExpenseForm({ initial }: { initial?: Expense }) {
@@ -160,10 +171,9 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
         return;
       }
       const f = j.fields || {};
-      const type =
-        f.expense_type === "fixed_asset" || f.expense_type === "expense"
-          ? f.expense_type
-          : form.expense_type;
+      const type = EXPENSE_TYPES.some((t) => t.value === f.expense_type)
+        ? f.expense_type
+        : form.expense_type;
       // Keep the category valid for the resulting type's option set; for a
       // fixed asset the OCR's expense category won't match, so fall back to "Other".
       const opts = categoryOptionsFor(type);
@@ -198,7 +208,9 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
       setScanNote(
         type === "fixed_asset"
           ? "Scanned as a fixed asset — pick the asset class below, then save."
-          : "Scanned — please review the details and line items below before saving.",
+          : type === "stock"
+            ? "Scanned as stock — pick the stock class below, then save."
+            : "Scanned — please review the details and line items below before saving.",
       );
     } catch {
       setError("Could not read that file. Enter the details manually.");
@@ -365,7 +377,7 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
 
         <label className="block text-sm">
           <span className="mb-1 block text-neutral-600">
-            {form.expense_type === "fixed_asset" ? "Asset class" : "Category"}
+            {categoryLabel(form.expense_type)}
           </span>
           <select
             value={form.category}
@@ -383,9 +395,7 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
         {form.category === "other" && (
           <label className="block text-sm">
             <span className="mb-1 block text-neutral-600">
-              {form.expense_type === "fixed_asset"
-                ? "Custom asset class (optional)"
-                : "Custom category (optional)"}
+              {`Custom ${categoryLabel(form.expense_type).toLowerCase()} (optional)`}
             </span>
             <input
               value={customCategory}
@@ -394,7 +404,9 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
               placeholder={
                 form.expense_type === "fixed_asset"
                   ? "e.g. signage, water tank, sound system"
-                  : "e.g. insurance, licenses, cleaning"
+                  : form.expense_type === "stock"
+                    ? "e.g. cups, straws, gift boxes"
+                    : "e.g. insurance, licenses, cleaning"
               }
               className="w-full rounded-lg border border-neutral-300 px-3 py-2"
             />

@@ -48,7 +48,24 @@ export const PAYERS = [
 
 export const EXPENSE_TYPES = [
   { value: "expense", label: "Expense" },
+  { value: "stock", label: "Stock" },
   { value: "fixed_asset", label: "Fixed Asset" },
+] as const;
+
+// Stock is an asset that becomes cost of goods when it's consumed or sold —
+// distinct from an expense (gone the moment it's paid) and from a fixed asset
+// (held for years and depreciated). These mirror the inventory accounts in the
+// chart, 1210–1280.
+export const STOCK_CATEGORIES = [
+  "coffee_beans",
+  "tea_and_beverage",
+  "milk_and_chilled",
+  "food",
+  "essential_oils",
+  "retail_merchandise",
+  "packaging",
+  "operating_consumables",
+  "other",
 ] as const;
 
 // Asset classes shown as the "category" when the type is Fixed Asset. Stored in
