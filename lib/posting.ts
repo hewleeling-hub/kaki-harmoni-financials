@@ -49,6 +49,23 @@ const ASSET_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   // POS, security or fit-out. Left for the user to pick.
 };
 
+/**
+ * What was bought — stock, by stock class. Inventory sits on the balance sheet
+ * until it is consumed or sold, when it becomes cost of goods.
+ */
+const STOCK_ACCOUNT_BY_CATEGORY: Record<string, string> = {
+  coffee_beans: "1210", // Coffee Beans Inventory
+  tea_and_beverage: "1220", // Tea and Beverage Inventory
+  milk_and_chilled: "1230", // Milk and Chilled Ingredients Inventory
+  food: "1240", // Food Inventory
+  essential_oils: "1250", // Essential Oils Inventory
+  retail_merchandise: "1260", // Retail Merchandise Inventory
+  packaging: "1270", // Packaging Inventory
+  operating_consumables: "1280", // Operating Consumables Inventory
+  // "other" is left for the user to place — stock that fits none of the eight
+  // is exactly the case where guessing would be wrong.
+};
+
 /** What was bought — running costs, by expense category. */
 const EXPENSE_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   wages: "6110", // Salaries and Wages
@@ -89,18 +106,24 @@ export type PostingSuggestion = {
 
 export function suggestPosting(expense: Expense): PostingSuggestion {
   const notes: string[] = [];
-  const isAsset = expense.expense_type === "fixed_asset";
+  const type = expense.expense_type;
 
   const k = key(expense.category);
-  const debitAccount = isAsset
-    ? (ASSET_ACCOUNT_BY_CATEGORY[k] ?? null)
-    : (EXPENSE_ACCOUNT_BY_CATEGORY[k] ?? null);
+  const debitAccount =
+    type === "fixed_asset"
+      ? (ASSET_ACCOUNT_BY_CATEGORY[k] ?? null)
+      : type === "stock"
+        ? (STOCK_ACCOUNT_BY_CATEGORY[k] ?? null)
+        : (EXPENSE_ACCOUNT_BY_CATEGORY[k] ?? null);
 
   if (!debitAccount) {
+    const what = expense.category.replace(/_/g, " ");
     notes.push(
-      isAsset
-        ? `"${expense.category.replace(/_/g, " ")}" could be several asset accounts — pick the right one.`
-        : `"${expense.category.replace(/_/g, " ")}" covers several accounts in your chart — pick the right one.`,
+      type === "fixed_asset"
+        ? `"${what}" could be several asset accounts — pick the right one.`
+        : type === "stock"
+          ? `"${what}" doesn't match one of the inventory accounts — pick the right one.`
+          : `"${what}" covers several accounts in your chart — pick the right one.`,
     );
   }
 

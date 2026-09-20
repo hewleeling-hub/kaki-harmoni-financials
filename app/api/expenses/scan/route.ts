@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { EXPENSE_CATEGORIES, ASSET_CATEGORIES } from "@/lib/constants";
+import {
+  EXPENSE_CATEGORIES,
+  ASSET_CATEGORIES,
+  STOCK_CATEGORIES,
+} from "@/lib/constants";
 
 // Expense categories + fixed-asset classes (deduped) — the model picks the one
 // matching expense_type.
 const ALL_CATEGORIES = Array.from(
-  new Set<string>([...EXPENSE_CATEGORIES, ...ASSET_CATEGORIES]),
+  new Set<string>([
+    ...EXPENSE_CATEGORIES,
+    ...ASSET_CATEGORIES,
+    ...STOCK_CATEGORIES,
+  ]),
 );
 
 export const dynamic = "force-dynamic";
