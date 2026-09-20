@@ -11,7 +11,7 @@ import {
   REIMBURSABLE_PAYERS,
 } from "@/lib/constants";
 import { amortise, isSubscription } from "@/lib/posting";
-import { today, rm } from "@/lib/format";
+import { humanise, today, rm } from "@/lib/format";
 import type { Expense } from "@/lib/types";
 
 // Category options depend on the expense type: running costs, stock classes or
@@ -382,11 +382,11 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
           <select
             value={form.category}
             onChange={(e) => set("category", e.target.value)}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 capitalize"
+            className="w-full rounded-lg border border-neutral-300 px-3 py-2"
           >
             {categoryOptionsFor(form.expense_type).map((c) => (
-              <option key={c} value={c} className="capitalize">
-                {c.replace(/_/g, " ")}
+              <option key={c} value={c}>
+                {humanise(c)}
               </option>
             ))}
           </select>

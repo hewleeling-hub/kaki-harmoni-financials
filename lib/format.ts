@@ -43,3 +43,12 @@ export function dayBounds(dateStr: string): { startISO: string; endISO: string }
   const end = new Date(start.getTime() + 24 * 60 * 60_000);
   return { startISO: start.toISOString(), endISO: end.toISOString() };
 }
+
+// Categories, classes and types are stored as snake_case keys. Read by a person
+// they should look like a phrase, not a headline — only the first word is
+// capitalised, so "spa_machine_and_water_filter" comes out as
+// "Spa machine and water filter" rather than "Spa Machine And Water Filter".
+export function humanise(key: string | null | undefined): string {
+  const words = String(key ?? "").replace(/[_-]+/g, " ").trim();
+  return words ? words[0].toUpperCase() + words.slice(1) : "";
+}
