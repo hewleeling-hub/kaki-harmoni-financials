@@ -53,7 +53,7 @@ const ASSET_ACCOUNT_BY_CATEGORY: Record<string, string> = {
  * What was bought — stock, by stock class. Inventory sits on the balance sheet
  * until it is consumed or sold, when it becomes cost of goods.
  */
-const STOCK_ACCOUNT_BY_CATEGORY: Record<string, string> = {
+export const STOCK_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   coffee_beans: "1210", // Coffee Beans Inventory
   tea_and_beverage: "1220", // Tea and Beverage Inventory
   milk_and_chilled: "1230", // Milk and Chilled Ingredients Inventory
@@ -202,4 +202,35 @@ export function amortise(
     startDate,
     endDate: end.toISOString().slice(0, 10),
   };
+}
+
+// ── stock takes ─────────────────────────────────────────────────────────────
+
+/**
+ * Where each stock class is charged when a stock take says it was consumed.
+ *
+ * Inventory (12xx) is relieved and cost of goods (5xxx) takes the charge:
+ *   Dr 5210 Coffee Beans Used / Cr 1210 Coffee Beans Inventory
+ *
+ * Two classes are deliberately absent because the right account depends on how
+ * the business actually uses them, and a wrong one misstates gross margin:
+ *   essential_oils         → used in treatments (5110) or sold (5310)?
+ *   operating_consumables  → cost of sales (5130) or general overhead?
+ */
+export const COGS_ACCOUNT_BY_STOCK_CLASS: Record<string, string> = {
+  coffee_beans: "5210", // Coffee Beans Used
+  tea_and_beverage: "5220", // Milk and Beverage Ingredients Used
+  milk_and_chilled: "5220",
+  food: "5230", // Food and Snack Purchases
+  retail_merchandise: "5320", // Merchandise Sold - Cost
+  packaging: "5240", // Takeaway Packaging Used
+};
+
+/** The inventory account a stock class sits in, for the credit side. */
+export function inventoryAccountForStockClass(stockClass: string): string | null {
+  return STOCK_ACCOUNT_BY_CATEGORY[key(stockClass)] ?? null;
+}
+
+export function cogsAccountForStockClass(stockClass: string): string | null {
+  return COGS_ACCOUNT_BY_STOCK_CLASS[key(stockClass)] ?? null;
 }

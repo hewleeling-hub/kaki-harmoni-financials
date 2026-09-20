@@ -199,3 +199,34 @@ export type SupplierNote = {
   status: "open" | "applied";
   applied_at: string | null;
 };
+
+export type StockTakeLine = {
+  id: string;
+  stock_take_id: string;
+  stock_class: string;
+  closing_value: number;
+  cogs_account: string | null;
+  created_at: string;
+};
+
+export type StockTake = {
+  id: string;
+  user_id: string | null;
+  created_at: string;
+  take_date: string;
+  notes: string | null;
+  journal_id: string | null;
+  posted_at: string | null;
+};
+
+/** A stock class worked out for one take: what came in, what's left, what went. */
+export type StockTakeRow = {
+  stock_class: string;
+  opening: number;
+  purchases: number;
+  closing: number;
+  /** opening + purchases − closing. Negative means the count can't be right. */
+  consumed: number;
+  inventoryAccount: string | null;
+  cogsAccount: string | null;
+};
