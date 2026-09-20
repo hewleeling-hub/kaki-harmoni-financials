@@ -73,7 +73,7 @@ export const STOCK_CATEGORIES = [
 export const ASSET_CATEGORIES = [
   "subscription",
   "kitchen_equipment",
-  "spa_machine",
+  "spa_machine_and_water_filter",
   "furniture_and_fittings",
   "electrical_equipment",
   "office_equipment",

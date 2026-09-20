@@ -36,7 +36,11 @@ export const SOURCE_ACCOUNT_BY_PAYER: Record<string, string> = {
 /** What was bought — fixed assets, by asset class. */
 const ASSET_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   kitchen_equipment: "1530", // Café Equipment
-  spa_machine: "1520", // Wellness Equipment
+  // Spa machines and the water filters that feed them are bought together and
+  // counted as one class. Both sit in 1520; a filter bought on its own for the
+  // café would belong in 1540 Water System Equipment instead.
+  spa_machine_and_water_filter: "1520", // Wellness Equipment
+  spa_machine: "1520", // legacy key, before water filters were folded in
   furniture_and_fittings: "1510", // Furniture and Fittings
   office_equipment: "1560", // Computer and Office Equipment
   computer: "1560",

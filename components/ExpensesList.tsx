@@ -9,7 +9,7 @@ import { PAYERS, EXPENSE_TYPES, REIMBURSABLE_PAYERS } from "@/lib/constants";
 // owed it back) or when cash was handed over directly from the tin.
 const hasVoucher = (payer: string) =>
   REIMBURSABLE_PAYERS.includes(payer) || payer === "petty_cash";
-import { rm } from "@/lib/format";
+import { humanise, rm } from "@/lib/format";
 import { amortise } from "@/lib/posting";
 import { ExportButton } from "@/components/ExportButton";
 import { PostToLedger } from "@/components/PostToLedger";
@@ -288,8 +288,8 @@ export function ExpensesList() {
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 capitalize text-neutral-600">
-                    {e.category.replace(/_/g, " ")}
+                  <td className="px-4 py-3 text-neutral-600">
+                    {humanise(e.category)}
                     {e.ai_category && e.ai_category !== e.category && (
                       <span
                         className="ml-1 text-xs text-neutral-400"
@@ -303,8 +303,8 @@ export function ExpensesList() {
                     {PAYERS.find((p) => p.value === e.payer)?.label ??
                       e.payer.replace(/_/g, " ")}
                   </td>
-                  <td className="px-4 py-3 capitalize text-neutral-600">
-                    {e.expense_type.replace(/_/g, " ")}
+                  <td className="px-4 py-3 text-neutral-600">
+                    {humanise(e.expense_type)}
                   </td>
                   <td className="px-4 py-3">
                     <span
