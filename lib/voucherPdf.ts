@@ -207,6 +207,23 @@ export async function buildVoucherPdf(
   }
 
   y -= 12;
+
+  // Subtotal and discount only appear when there was a discount.
+  const discount = Number(expense.discount) || 0;
+  if (discount > 0) {
+    rule(page, y);
+    y -= 14;
+    text(c, "Subtotal", M, y, { size: 9, color: MUTED });
+    text(c, (Number(expense.amount) + discount).toFixed(2), amtX, y, {
+      size: 9,
+      align: "right",
+    });
+    y -= 13;
+    text(c, "Discount", M, y, { size: 9, color: MUTED });
+    text(c, `-${discount.toFixed(2)}`, amtX, y, { size: 9, align: "right" });
+    y -= 6;
+  }
+
   rule(page, y, 1.4, INK);
   y -= 18;
   text(c, "Total", M, y, { size: 11, bold: true });

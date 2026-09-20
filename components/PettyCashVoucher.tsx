@@ -51,6 +51,7 @@ export function PettyCashVoucher({
     : expense.vendor;
   const beingForFallback = expense.category.replace(/_/g, " ");
 
+  const discount = Number(expense.discount) || 0;
   const lineItems = expense.line_items ?? [];
   const itemised = lineItems.length > 0;
   // Line items are captured from the receipt and may not add up to the total
@@ -206,6 +207,28 @@ export function PettyCashVoucher({
             ))}
           </tbody>
           <tfoot>
+            {/* Only shown when there was one — an empty discount line on a
+                voucher just invites the question "discount of what?". */}
+            {discount > 0 && (
+              <>
+                <tr className="border-t border-neutral-300 text-neutral-600">
+                  <td className="py-1.5" colSpan={2}>
+                    Subtotal
+                  </td>
+                  <td className="py-1.5 text-right tabular-nums">
+                    {rm(Number(expense.amount) + discount)}
+                  </td>
+                </tr>
+                <tr className="text-neutral-600">
+                  <td className="py-1.5" colSpan={2}>
+                    Discount
+                  </td>
+                  <td className="py-1.5 text-right tabular-nums">
+                    −{rm(discount)}
+                  </td>
+                </tr>
+              </>
+            )}
             <tr className="border-t-2 border-neutral-900 text-base font-bold">
               <td className="py-2" colSpan={2}>
                 Total

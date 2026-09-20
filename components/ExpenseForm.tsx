@@ -38,6 +38,7 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
     subscription_months: initial?.subscription_months
       ? String(initial.subscription_months)
       : "12",
+    discount: initial?.discount ? String(initial.discount) : "",
     comments: initial?.comments ?? "",
   });
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +84,11 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
   const lineItemsTotal = lineItems.reduce(
     (a, li) => a + (Number(li.amount) || 0),
     0,
+  );
+  // What the purchase comes to after any discount — never below zero.
+  const netTotal = Math.max(
+    0,
+    Math.round((lineItemsTotal - (Number(form.discount) || 0)) * 100) / 100,
   );
 
   // When "Other" is picked, the typed label becomes the category (stored as
@@ -220,6 +226,7 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
           amount: amt,
           // Only meaningful for a subscription; null everywhere else so an old
           // term can't linger after the category changes.
+          discount: Number(form.discount) || 0,
           subscription_months: isSubscription(effectiveCategory())
             ? Number(form.subscription_months) || null
             : null,
@@ -535,14 +542,46 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
                   </button>
                 </div>
               ))}
-              <div className="text-right text-xs text-neutral-500">
-                Items total: <strong>{rm(lineItemsTotal)}</strong>
+              {/* Subtotal → discount → total, so the paperwork shows how the
+                  amount paid was arrived at. `amount` stays the cash figure;
+                  the discount is recorded, never deducted a second time. */}
+              <div className="ml-auto w-64 space-y-1 text-sm">
+                <div className="flex justify-between text-neutral-500">
+                  <span>Subtotal</span>
+                  <span className="tabular-nums">{rm(lineItemsTotal)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <label htmlFor="discount" className="text-neutral-500">
+                    Discount
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <span className="text-neutral-400">−RM</span>
+                    <input
+                      id="discount"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.discount}
+                      onChange={(e) => set("discount", e.target.value)}
+                      placeholder="0.00"
+                      className="w-24 rounded-lg border border-neutral-300 px-2 py-1 text-right text-sm tabular-nums"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-between border-t border-neutral-300 pt-1 font-semibold">
+                  <span>Total</span>
+                  <span className="tabular-nums">{rm(netTotal)}</span>
+                </div>
                 {form.amount &&
-                  Math.abs(lineItemsTotal - (Number(form.amount) || 0)) > 0.01 && (
-                    <span className="text-amber-600">
-                      {" "}
-                      · purchase total {rm(Number(form.amount))}
-                    </span>
+                  Math.abs(netTotal - (Number(form.amount) || 0)) > 0.01 && (
+                    <button
+                      type="button"
+                      onClick={() => set("amount", netTotal.toFixed(2))}
+                      className="w-full rounded-md bg-amber-50 px-2 py-1 text-left text-xs text-amber-800 hover:bg-amber-100"
+                    >
+                      Amount above says {rm(Number(form.amount))} — tap to use{" "}
+                      {rm(netTotal)}
+                    </button>
                   )}
               </div>
             </div>
