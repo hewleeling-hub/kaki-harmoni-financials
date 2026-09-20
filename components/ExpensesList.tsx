@@ -265,7 +265,13 @@ export function ExpensesList() {
                       return a ? (
                         <div className="text-xs text-sky-700">
                           {a.months}-month subscription · {rm(a.perMonth)}/mo ·
-                          to {a.endDate}
+                          to {a.endDate} ·{" "}
+                          <Link
+                            href="/amortisation"
+                            className="underline underline-offset-2"
+                          >
+                            amortise
+                          </Link>
                         </div>
                       ) : null;
                     })()}

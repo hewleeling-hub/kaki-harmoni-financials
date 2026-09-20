@@ -15,6 +15,7 @@ const LINKS = [
   { href: "/notes", label: "Notes" },
   { href: "/accounts", label: "Accounts" },
   { href: "/ledger", label: "Ledger" },
+  { href: "/amortisation", label: "Amortisation" },
   { href: "/budget", label: "Budget" },
   { href: "/reports", label: "Reports" },
 ];
