@@ -1,10 +1,11 @@
-// Spreading a prepaid subscription over the months it covers.
+// Spreading an amount over the months it belongs to — a prepaid subscription
+// released to the P&L, or a fixed asset depreciated over its life.
 //
 // Nothing here touches the database: given an amount, a term and a start date
 // it says what each month should be charged. The rule that matters is that the
 // slices add back to the amount exactly — a subscription that doesn't clear to
-// zero at the end of its term leaves a stub sitting on the balance sheet
-// forever.
+// zero at the end of its term, or an asset that never fully depreciates, leaves
+// a stub sitting on the balance sheet forever.
 
 export type MonthCharge = {
   /** First day of the calendar month, YYYY-MM-01. */
@@ -46,18 +47,18 @@ export function monthLabel(period: string): string {
 }
 
 /**
- * One charge per month of the term, starting with the month of purchase.
+ * One charge per month of the term, starting with the month it begins.
  *
- * Whole months, not days: a subscription bought on the 24th is charged for the
- * whole of that month. Pro-rating by day would be more precise than this
- * business needs and would make every month a different number.
+ * Whole months, not days: something bought on the 24th is charged for the whole
+ * of that month. Pro-rating by day would be more precise than this business
+ * needs and would make every month a different number.
  *
  * The split is done in sen, and the odd sen that won't divide are handed to the
  * earliest months (269.50 over 60 months is ten months of 4.50 then fifty of
  * 4.49). Dividing and rounding instead leaves a gap — 4.49 × 60 is 269.40, ten
- * sen short — so the prepaid balance would never reach zero.
+ * sen short — so the balance would never reach zero.
  */
-export function amortisationSchedule(
+export function spreadOverMonths(
   amount: number,
   months: number | null | undefined,
   startDate: string,
@@ -94,3 +95,6 @@ export const round2 = (n: number) => Math.round(n * 100) / 100;
 export function sumCharges(charges: { amount: number }[]): number {
   return round2(charges.reduce((a, c) => a + Number(c.amount), 0));
 }
+
+/** The same split, named for what it does when the amount is a prepayment. */
+export const amortisationSchedule = spreadOverMonths;
