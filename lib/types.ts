@@ -76,6 +76,13 @@ export type Expense = {
   subscription_months: number | null;
   // Account a subscription's monthly slice is charged to, once chosen.
   amortisation_account: string | null;
+  // Fixed assets: useful life in months, when it was put to use, what it is
+  // expected to be worth at the end, and the two sides of the monthly entry.
+  depreciation_months: number | null;
+  depreciation_start: string | null;
+  residual_value: number;
+  depreciation_account: string | null;
+  accumulated_account: string | null;
   expense_date: string;
   vendor: string;
   description: string | null;
@@ -241,6 +248,19 @@ export type SubscriptionCharge = {
   period: string;
   amount: number;
   expense_account: string;
+  journal_id: string | null;
+  created_at: string;
+};
+
+/** One month of a fixed asset's cost, written off to the P&L. */
+export type DepreciationCharge = {
+  id: string;
+  expense_id: string;
+  /** First day of the calendar month charged. */
+  period: string;
+  amount: number;
+  expense_account: string;
+  accumulated_account: string;
   journal_id: string | null;
   created_at: string;
 };
