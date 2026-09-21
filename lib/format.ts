@@ -3,9 +3,18 @@
 // fixed offset (no timezone database needed, no DST edge cases).
 const GMT8_MS = 8 * 60 * 60 * 1000;
 
+// Money, grouped in thousands so a five-figure balance can be read at a glance:
+// RM5,903.33 rather than RM5903.33. The minus goes in front of the RM, which is
+// how a negative reads on a statement.
 export function rm(amount: number | string | null | undefined): string {
   const n = Number(amount ?? 0);
-  return `RM${n.toFixed(2)}`;
+  const safe = Number.isFinite(n) ? n : 0;
+  const fixed = Math.abs(safe).toFixed(2);
+  const [whole, cents] = fixed.split(".");
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  // Sign after rounding: a fraction of a sen that rounds away is not "-RM0.00".
+  const negative = safe < 0 && Number(fixed) !== 0;
+  return `${negative ? "-" : ""}RM${grouped}.${cents}`;
 }
 
 // mm:ss countdown from milliseconds remaining (never negative).
