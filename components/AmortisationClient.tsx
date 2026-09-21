@@ -181,8 +181,8 @@ export function AmortisationClient() {
             <Link href="/expenses" className="text-emerald-700 underline">
               Purchases
             </Link>{" "}
-            as a fixed asset with the class <strong>Subscription</strong> or{" "}
-            <strong>Prepayment</strong>, and say how many months it covers.
+            with the type <strong>Prepayment</strong>, and say how many months it
+            covers.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">

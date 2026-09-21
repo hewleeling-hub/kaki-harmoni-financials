@@ -48,8 +48,23 @@ export const PAYERS = [
 
 export const EXPENSE_TYPES = [
   { value: "expense", label: "Expense" },
+  { value: "prepayment", label: "Prepayment" },
   { value: "stock", label: "Stock" },
   { value: "fixed_asset", label: "Fixed Asset" },
+] as const;
+
+// Paid up front for a period, so it is a current asset until the months it
+// covers have passed — a secretarial retainer, a year of insurance, a domain.
+// Not a fixed asset: it is used up rather than owned and worn out, which is why
+// it sits in 13xx and is amortised rather than depreciated.
+export const PREPAYMENT_CATEGORIES = [
+  "company_secretarial_and_office_address",
+  "subscription",
+  "rent",
+  "insurance",
+  "licence",
+  "domain_and_hosting",
+  "other",
 ] as const;
 
 // Stock is an asset that becomes cost of goods when it's consumed or sold —
@@ -71,8 +86,6 @@ export const STOCK_CATEGORIES = [
 // Asset classes shown as the "category" when the type is Fixed Asset. Stored in
 // the same category text column; "Other" allows a custom class.
 export const ASSET_CATEGORIES = [
-  "subscription",
-  "prepayment",
   "kitchen_equipment",
   "spa_machine_and_water_filter",
   "furniture_and_fittings",
