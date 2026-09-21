@@ -72,6 +72,7 @@ export const STOCK_CATEGORIES = [
 // the same category text column; "Other" allows a custom class.
 export const ASSET_CATEGORIES = [
   "subscription",
+  "prepayment",
   "kitchen_equipment",
   "spa_machine_and_water_filter",
   "furniture_and_fittings",

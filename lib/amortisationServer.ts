@@ -37,8 +37,8 @@ export type AmortisationRow = {
 };
 
 /**
- * Every prepaid subscription, worked out as at `through` (a YYYY-MM-DD date or
- * YYYY-MM month).
+ * Every prepayment with a term, worked out as at `through` (a YYYY-MM-DD date
+ * or YYYY-MM month).
  *
  * A subscription can only be amortised once its purchase has been posted: the
  * monthly entry credits the prepaid account, and crediting an account nothing
@@ -49,10 +49,13 @@ export async function amortisationRows(
   supabase: SupabaseClient,
   through: string,
 ): Promise<AmortisationRow[]> {
+  // Anything bought with a term to spread: a subscription, prepaid rent,
+  // insurance, a licence. The term is what makes it amortisable, not the
+  // category, so this follows the term rather than a list of category names.
   const { data: expenseRows } = await supabase
     .from("expenses")
     .select("*")
-    .eq("category", "subscription")
+    .gt("subscription_months", 0)
     .order("expense_date", { ascending: true });
   const expenses = (expenseRows ?? []) as Expense[];
   if (!expenses.length) return [];
@@ -146,7 +149,7 @@ export function chargeableRows(rows: AmortisationRow[]): AmortisationRow[] {
   return rows.filter((r) => r.outstanding.length > 0 && !r.blocked);
 }
 
-/** Outstanding months across every subscription, grouped by month. */
+/** Outstanding months across every prepayment, grouped by month. */
 export function monthsDue(
   rows: AmortisationRow[],
 ): { period: string; total: number; count: number }[] {
