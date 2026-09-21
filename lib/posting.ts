@@ -58,6 +58,24 @@ const ASSET_ACCOUNT_BY_CATEGORY: Record<string, string> = {
 };
 
 /**
+ * What was bought — a prepayment, by what it covers.
+ *
+ * These are current assets, not fixed ones: paid up front for a period and used
+ * up as the months pass, so they sit in 13xx and are released to the P&L by the
+ * Amortisation page rather than depreciated.
+ */
+export const PREPAID_ACCOUNT_BY_CATEGORY: Record<string, string> = {
+  company_secretarial_and_office_address: "1380", // Prepaid Professional Fees
+  subscription: "1350", // Prepaid Software Subscriptions
+  rent: "1310", // Prepaid Rent
+  insurance: "1320", // Prepaid Insurance
+  licence: "1330", // Prepaid Licences
+  domain_and_hosting: "1340", // Prepaid Domain and Hosting
+  // "other" is left for the user to place — a prepayment that fits none of the
+  // six is exactly the case where guessing would be wrong.
+};
+
+/**
  * What was bought — stock, by stock class. Inventory sits on the balance sheet
  * until it is consumed or sold, when it becomes cost of goods.
  */
@@ -121,18 +139,22 @@ export function suggestPosting(expense: Expense): PostingSuggestion {
   const debitAccount =
     type === "fixed_asset"
       ? (ASSET_ACCOUNT_BY_CATEGORY[k] ?? null)
-      : type === "stock"
-        ? (STOCK_ACCOUNT_BY_CATEGORY[k] ?? null)
-        : (EXPENSE_ACCOUNT_BY_CATEGORY[k] ?? null);
+      : type === "prepayment"
+        ? (PREPAID_ACCOUNT_BY_CATEGORY[k] ?? null)
+        : type === "stock"
+          ? (STOCK_ACCOUNT_BY_CATEGORY[k] ?? null)
+          : (EXPENSE_ACCOUNT_BY_CATEGORY[k] ?? null);
 
   if (!debitAccount) {
     const what = expense.category.replace(/_/g, " ");
     notes.push(
       type === "fixed_asset"
         ? `"${what}" could be several asset accounts — pick the right one.`
-        : type === "stock"
-          ? `"${what}" doesn't match one of the inventory accounts — pick the right one.`
-          : `"${what}" covers several accounts in your chart — pick the right one.`,
+        : type === "prepayment"
+          ? `"${what}" doesn't match one of the prepayment accounts — pick the right one.`
+          : type === "stock"
+            ? `"${what}" doesn't match one of the inventory accounts — pick the right one.`
+            : `"${what}" covers several accounts in your chart — pick the right one.`,
     );
   }
 
@@ -165,7 +187,8 @@ export function postingMemo(expense: Expense): string {
  * expenses over the months it covers rather than on the day it was bought —
  * a subscription, or any other prepayment (rent, insurance, a licence).
  */
-export function isPrepaid(category: string): boolean {
+export function isPrepaid(category: string, expenseType?: string): boolean {
+  if (expenseType === "prepayment") return true;
   const k = key(category);
   return k === "subscription" || k === "prepayment";
 }
@@ -239,6 +262,7 @@ export const AMORTISATION_ACCOUNT_BY_PREPAID: Record<string, string> = {
   "1310": "6210", // Prepaid Rent → Rent and Service Charges
   "1320": "6710", // Prepaid Insurance → Insurance Expense
   "1330": "6660", // Prepaid Licences → Business Licence and Permit Fees
+  "1380": "6630", // Prepaid Professional Fees → Company Secretarial Fees
   // 1360 and 1370 are deposits, not prepayments: they come back rather than
   // being used up, so they are never amortised.
 };

@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   EXPENSE_CATEGORIES,
   ASSET_CATEGORIES,
+  PREPAYMENT_CATEGORIES,
   STOCK_CATEGORIES,
   PAYERS,
   EXPENSE_TYPES,
@@ -18,6 +19,7 @@ import type { Expense } from "@/lib/types";
 // asset classes.
 function categoryOptionsFor(type: string): readonly string[] {
   if (type === "fixed_asset") return ASSET_CATEGORIES;
+  if (type === "prepayment") return PREPAYMENT_CATEGORIES;
   if (type === "stock") return STOCK_CATEGORIES;
   return EXPENSE_CATEGORIES;
 }
@@ -25,6 +27,7 @@ function categoryOptionsFor(type: string): readonly string[] {
 // What the category field is called for each type.
 function categoryLabel(type: string): string {
   if (type === "fixed_asset") return "Asset class";
+  if (type === "prepayment") return "What it covers";
   if (type === "stock") return "Stock class";
   return "Category";
 }
@@ -239,7 +242,7 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
           // Only meaningful for something paid up front; null everywhere else
           // so an old term can't linger after the category changes.
           discount: Number(form.discount) || 0,
-          subscription_months: isPrepaid(effectiveCategory())
+          subscription_months: isPrepaid(effectiveCategory(), form.expense_type)
             ? Number(form.subscription_months) || null
             : null,
           receipt_url: receiptPath,
@@ -418,7 +421,7 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
 
         {/* A prepaid subscription buys coverage over a period, so the term is
             what lets the cost be spread across the months it covers. */}
-        {isPrepaid(effectiveCategory()) && (
+        {isPrepaid(effectiveCategory(), form.expense_type) && (
           <label className="block text-sm">
             <span className="mb-1 block text-neutral-600">
               Charge to expenses over (months)

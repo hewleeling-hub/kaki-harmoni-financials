@@ -3,15 +3,17 @@ import Anthropic from "@anthropic-ai/sdk";
 import {
   EXPENSE_CATEGORIES,
   ASSET_CATEGORIES,
+  PREPAYMENT_CATEGORIES,
   STOCK_CATEGORIES,
 } from "@/lib/constants";
 
-// Expense categories + fixed-asset classes (deduped) — the model picks the one
+// Every category across the four types (deduped) — the model picks the one
 // matching expense_type.
 const ALL_CATEGORIES = Array.from(
   new Set<string>([
     ...EXPENSE_CATEGORIES,
     ...ASSET_CATEGORIES,
+    ...PREPAYMENT_CATEGORIES,
     ...STOCK_CATEGORIES,
   ]),
 );
@@ -42,9 +44,9 @@ const EXTRACTION_SCHEMA = {
     },
     expense_type: {
       type: "string",
-      enum: ["expense", "fixed_asset"],
+      enum: ["expense", "prepayment", "stock", "fixed_asset"],
       description:
-        "fixed_asset for durable equipment (spa machines, furniture, computers, printers); otherwise expense",
+        "fixed_asset for durable equipment kept for years (spa machines, furniture, computers); prepayment for something paid up front covering a period ahead (a year of company secretarial or office address services, insurance, a licence, a domain, a software subscription); stock for goods held to be used or sold (coffee, milk, oils, packaging); otherwise expense",
     },
     line_items: {
       type: "array",
@@ -66,7 +68,7 @@ const EXTRACTION_SCHEMA = {
       type: "string",
       enum: ALL_CATEGORIES,
       description:
-        "If expense_type is fixed_asset, the asset class (kitchen_equipment, spa_machine, furniture_and_fittings, electrical_equipment, office_equipment, computer, printer). Otherwise the best-fit expense category (supplies, cost_of_goods, operating_expenses, maintenance, utilities, rent, equipment, marketing, wages, transport, petrol, toll, meals).",
+        "If expense_type is fixed_asset, the asset class (kitchen_equipment, spa_machine_and_water_filter, furniture_and_fittings, electrical_equipment, office_equipment, computer, printer). If prepayment, what it covers (company_secretarial_and_office_address, subscription, rent, insurance, licence, domain_and_hosting). If stock, the stock class. Otherwise the best-fit expense category (supplies, cost_of_goods, operating_expenses, maintenance, utilities, rent, equipment, marketing, wages, transport, petrol, toll, meals).",
     },
   },
   required: [
