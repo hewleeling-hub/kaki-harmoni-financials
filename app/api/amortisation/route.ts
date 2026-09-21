@@ -7,7 +7,7 @@ import type { Account } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-// GET /api/amortisation?through=YYYY-MM — every prepaid subscription, what it
+// GET /api/amortisation?through=YYYY-MM — every prepayment with a term, what it
 // has released so far and what is due up to that month.
 export async function GET(req: Request) {
   const asked = new URL(req.url).searchParams.get("through") ?? today();
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
 //   Dr  expense account (6440 / 6510 / 6520 …)   one month's share
 //       Cr  prepaid account (1350 / 1340)                   one month's share
 //
-// One journal per month, with a line pair per subscription, so the ledger reads
+// One journal per month, with a line pair per prepayment, so the ledger reads
 // as one month-end entry rather than a scatter of tiny ones.
 // Body: { through, accounts?: { <expense id>: "<account code>" } }
 export async function POST(req: Request) {
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
   if (!due.length)
     return NextResponse.json(
       {
-        error: `Nothing is due up to ${monthLabel(through)}. Anything still sitting in prepaid is either unposted or has no term recorded.`,
+        error: `Nothing is due up to ${monthLabel(through)}. Anything still sitting in prepaid is either already up to date, unposted, or has no term recorded.`,
       },
       { status: 400 },
     );
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
       );
   }
 
-  // Group the months due across all subscriptions: one journal per month.
+  // Group the months due across all prepayments: one journal per month.
   const periods = [
     ...new Set(due.flatMap((r) => r.outstanding.map((m) => m.period))),
   ].sort();
@@ -162,7 +162,7 @@ export async function POST(req: Request) {
       .from("journals")
       .insert({
         entry_date,
-        memo: `Subscription amortisation — ${monthLabel(period)}`,
+        memo: `Amortisation — ${monthLabel(period)}`,
         reference: `AMORT-${period.slice(0, 7)}`,
         source: "amortisation",
       })

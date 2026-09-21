@@ -50,6 +50,9 @@ const ASSET_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   // Paid up front, so it buys coverage over a period rather than being spent
   // on the day — an asset until the months it covers have passed.
   subscription: "1350", // Prepaid Software Subscriptions
+  // "prepayment" is deliberately unmapped: rent, insurance, licences, domains
+  // and deposits each have their own prepaid account (1310–1370) and the word
+  // alone doesn't say which, so the user picks when posting it.
   // electrical_equipment and other are ambiguous — could be air-conditioning,
   // POS, security or fit-out. Left for the user to pick.
 };
@@ -157,9 +160,14 @@ export function postingMemo(expense: Expense): string {
 
 // ── subscriptions ───────────────────────────────────────────────────────────
 
-/** True when this purchase is a prepaid subscription, whatever its type. */
-export function isSubscription(category: string): boolean {
-  return key(category) === "subscription";
+/**
+ * True when this purchase is paid up front for a period, so it is charged to
+ * expenses over the months it covers rather than on the day it was bought —
+ * a subscription, or any other prepayment (rent, insurance, a licence).
+ */
+export function isPrepaid(category: string): boolean {
+  const k = key(category);
+  return k === "subscription" || k === "prepayment";
 }
 
 export type Amortisation = {
@@ -229,6 +237,10 @@ export function amortise(
 export const AMORTISATION_ACCOUNT_BY_PREPAID: Record<string, string> = {
   "1350": "6440", // Prepaid Software Subscriptions → Software and SaaS Subscriptions
   "1310": "6210", // Prepaid Rent → Rent and Service Charges
+  "1320": "6710", // Prepaid Insurance → Insurance Expense
+  "1330": "6660", // Prepaid Licences → Business Licence and Permit Fees
+  // 1360 and 1370 are deposits, not prepayments: they come back rather than
+  // being used up, so they are never amortised.
 };
 
 export function amortisationAccountForPrepaid(

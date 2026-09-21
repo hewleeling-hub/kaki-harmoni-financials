@@ -254,8 +254,8 @@ export function ExpensesList() {
                         {e.description}
                       </div>
                     )}
-                    {/* A prepaid subscription is spread over the months it
-                        covers, so show the term and the monthly charge. */}
+                    {/* Anything prepaid is spread over the months it covers, so
+                        show the term and the monthly charge. */}
                     {(() => {
                       const a = amortise(
                         Number(e.amount),
@@ -264,7 +264,7 @@ export function ExpensesList() {
                       );
                       return a ? (
                         <div className="text-xs text-sky-700">
-                          {a.months}-month subscription · {rm(a.perMonth)}/mo ·
+                          Charged over {a.months} months · {rm(a.perMonth)}/mo ·
                           to {a.endDate} ·{" "}
                           <Link
                             href="/amortisation"

@@ -111,10 +111,10 @@ export function AmortisationClient() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Amortisation</h1>
         <p className="mt-1 max-w-2xl text-sm text-neutral-500">
-          A subscription paid up front buys months of cover, so it sits in prepaid
-          and a slice moves to expenses each month. Charged in whole months from
-          the month of purchase, so the prepaid balance walks down to exactly zero
-          on the last month of the term.
+          Anything paid up front — a subscription, rent, insurance, a licence —
+          sits in prepaid and a slice moves to expenses each month. Charged in
+          whole months from the month of purchase, so the prepaid balance walks
+          down to exactly zero on the last month of the term.
         </p>
       </div>
 
@@ -172,23 +172,24 @@ export function AmortisationClient() {
       </div>
 
       <div>
-        <h2 className="mb-3 font-semibold">Subscriptions</h2>
+        <h2 className="mb-3 font-semibold">Prepayments</h2>
         {!data ? (
           <p className="text-neutral-500">Loading…</p>
         ) : rows.length === 0 ? (
           <div className="rounded-xl border border-dashed border-neutral-300 bg-white p-10 text-center text-neutral-500">
-            No prepaid subscriptions yet. Record one in{" "}
+            Nothing prepaid yet. Record one in{" "}
             <Link href="/expenses" className="text-emerald-700 underline">
               Purchases
             </Link>{" "}
-            as a fixed asset with the class <strong>Subscription</strong>.
+            as a fixed asset with the class <strong>Subscription</strong> or{" "}
+            <strong>Prepayment</strong>, and say how many months it covers.
           </div>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
             <table className="w-full text-sm">
               <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Subscription</th>
+                  <th className="px-4 py-3 font-medium">Prepayment</th>
                   <th className="px-4 py-3 font-medium">Term</th>
                   <th className="px-4 py-3 text-right font-medium">Per month</th>
                   <th className="px-4 py-3 text-right font-medium">Charged</th>

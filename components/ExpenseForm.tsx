@@ -10,7 +10,7 @@ import {
   EXPENSE_TYPES,
   REIMBURSABLE_PAYERS,
 } from "@/lib/constants";
-import { amortise, isSubscription } from "@/lib/posting";
+import { amortise, isPrepaid } from "@/lib/posting";
 import { humanise, today, rm } from "@/lib/format";
 import type { Expense } from "@/lib/types";
 
@@ -236,10 +236,10 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
           ...form,
           category: effectiveCategory(),
           amount: amt,
-          // Only meaningful for a subscription; null everywhere else so an old
-          // term can't linger after the category changes.
+          // Only meaningful for something paid up front; null everywhere else
+          // so an old term can't linger after the category changes.
           discount: Number(form.discount) || 0,
-          subscription_months: isSubscription(effectiveCategory())
+          subscription_months: isPrepaid(effectiveCategory())
             ? Number(form.subscription_months) || null
             : null,
           receipt_url: receiptPath,
@@ -418,10 +418,10 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
 
         {/* A prepaid subscription buys coverage over a period, so the term is
             what lets the cost be spread across the months it covers. */}
-        {isSubscription(effectiveCategory()) && (
+        {isPrepaid(effectiveCategory()) && (
           <label className="block text-sm">
             <span className="mb-1 block text-neutral-600">
-              Subscription term (months)
+              Charge to expenses over (months)
             </span>
             <input
               type="number"
