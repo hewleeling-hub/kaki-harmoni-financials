@@ -18,9 +18,11 @@ export const businessConfig = {
   // the customer-facing site stays on the brand.
   name: "Kaki Harmoni",
   legalName: "AQUAHARMONI SDN. BHD.",
-  // Company registration number, printed under the legal name on documents.
-  // Empty until confirmed — a wrong SSM number on a claim is worse than none.
-  registrationNumber: "", // TODO(verify) — SSM registration no.
+  // SSM registration number, printed under the legal name wherever the company
+  // is named. Both forms are given: the 2026 registration number and the old
+  // company number in brackets, which is still what banks and suppliers ask
+  // for. Leave empty to print nothing — a wrong number is worse than none.
+  registrationNumber: "202601020397 (1682494-V)",
   tagline: "Relax • Refresh • Reconnect",
 
   // Contact — digits only for wa.me / tel: links are derived below.
@@ -208,6 +210,21 @@ export const visitSteps = [
 ] as const;
 
 /* --------------------------- derived helpers --------------------------- */
+
+/**
+ * The line that goes under the company name on anything it is named on:
+ * the brand it trades as, and the SSM number.
+ *
+ * One function rather than three copies, so a document can't be added later
+ * that names AQUAHARMONI SDN. BHD. and quietly leaves the registration off.
+ */
+export function entitySubline(): string {
+  const brand = `trading as ${businessConfig.name}`;
+  return businessConfig.registrationNumber
+    ? `${brand} · SSM No: ${businessConfig.registrationNumber}`
+    : brand;
+}
+
 
 const waDigits = businessConfig.whatsapp.replace(/[^0-9]/g, "");
 

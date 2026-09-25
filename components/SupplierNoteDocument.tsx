@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Expense, SupplierNote } from "@/lib/types";
 import { rm } from "@/lib/format";
 import { amountInWords } from "@/lib/amountInWords";
-import { businessConfig } from "@/config/business";
+import { EntityLetterhead } from "@/components/EntityLetterhead";
 
 const label = (v: string) => v.replace(/_/g, " ");
 
@@ -66,20 +66,7 @@ export function SupplierNoteDocument({
 
       <div className="voucher-sheet mx-auto max-w-[820px] border border-neutral-300 bg-white p-8 text-[13px] leading-relaxed text-neutral-900 print:max-w-none print:border-0 print:p-0">
         <header className="flex items-start justify-between gap-6 border-b-2 border-neutral-900 pb-4">
-          <div>
-            <p className="font-serif text-2xl font-semibold">
-              {businessConfig.legalName}
-            </p>
-            <p className="text-xs text-neutral-500">
-              trading as {businessConfig.name}
-              {businessConfig.registrationNumber
-                ? ` · Co. No. ${businessConfig.registrationNumber}`
-                : ""}
-            </p>
-            <p className="mt-1 whitespace-pre-line text-xs text-neutral-500">
-              {businessConfig.address.lines.join("\n")}
-            </p>
-          </div>
+          <EntityLetterhead />
           <div className="text-right">
             <p className="text-lg font-bold uppercase tracking-widest">{title}</p>
             <table className="ml-auto mt-2 text-xs">
