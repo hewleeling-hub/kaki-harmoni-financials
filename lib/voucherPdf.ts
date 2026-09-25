@@ -108,9 +108,15 @@ export async function buildVoucherPdf(
   let y = PAGE_H - M;
 
   // ── masthead ──────────────────────────────────────────────────────────────
-  text(c, businessConfig.name, M, y - 14, { size: 16, bold: true });
+  text(c, businessConfig.legalName, M, y - 14, { size: 15, bold: true });
   text(c, "PETTY CASH VOUCHER", RIGHT, y - 13, { size: 13, bold: true, align: "right" });
-  y -= 30;
+  y -= 28;
+
+  const brandLine = businessConfig.registrationNumber
+    ? `trading as ${businessConfig.name} · Co. No. ${businessConfig.registrationNumber}`
+    : `trading as ${businessConfig.name}`;
+  text(c, brandLine, M, y, { size: 7.5, color: MUTED });
+  y -= 11;
 
   for (const line of businessConfig.address.lines) {
     text(c, line, M, y, { size: 7.5, color: MUTED });
