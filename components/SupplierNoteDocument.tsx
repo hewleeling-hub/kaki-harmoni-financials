@@ -68,7 +68,13 @@ export function SupplierNoteDocument({
         <header className="flex items-start justify-between gap-6 border-b-2 border-neutral-900 pb-4">
           <div>
             <p className="font-serif text-2xl font-semibold">
-              {businessConfig.name}
+              {businessConfig.legalName}
+            </p>
+            <p className="text-xs text-neutral-500">
+              trading as {businessConfig.name}
+              {businessConfig.registrationNumber
+                ? ` · Co. No. ${businessConfig.registrationNumber}`
+                : ""}
             </p>
             <p className="mt-1 whitespace-pre-line text-xs text-neutral-500">
               {businessConfig.address.lines.join("\n")}

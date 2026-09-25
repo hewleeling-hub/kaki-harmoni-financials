@@ -12,7 +12,15 @@
  */
 
 export const businessConfig = {
+  // Kaki Harmoni is the brand customers know. AQUAHARMONI SDN. BHD. is the
+  // company behind it, and it is the company — not the brand — that owes and
+  // is owed money, so the accounting documents lead with the legal name while
+  // the customer-facing site stays on the brand.
   name: "Kaki Harmoni",
+  legalName: "AQUAHARMONI SDN. BHD.",
+  // Company registration number, printed under the legal name on documents.
+  // Empty until confirmed — a wrong SSM number on a claim is worse than none.
+  registrationNumber: "", // TODO(verify) — SSM registration no.
   tagline: "Relax • Refresh • Reconnect",
 
   // Contact — digits only for wa.me / tel: links are derived below.
