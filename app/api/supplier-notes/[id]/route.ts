@@ -38,6 +38,18 @@ export async function PATCH(
     patch.description = String(body.description).trim() || null;
   if (body.expense_id !== undefined) patch.expense_id = body.expense_id || null;
 
+  // Payment details, each only when sent, so editing one doesn't clear another.
+  const text = (v: unknown) => {
+    const s = String(v ?? "").trim();
+    return s ? s.slice(0, 120) : null;
+  };
+  if (body.pay_to_name !== undefined) patch.pay_to_name = text(body.pay_to_name);
+  if (body.pay_to_bank !== undefined) patch.pay_to_bank = text(body.pay_to_bank);
+  if (body.pay_to_account !== undefined)
+    patch.pay_to_account = text(body.pay_to_account)?.replace(/[^0-9 -]/g, "") || null;
+  if (body.pay_to_qr_url !== undefined)
+    patch.pay_to_qr_url = body.pay_to_qr_url ? String(body.pay_to_qr_url) : null;
+
   // Marking a note applied stamps when the adjustment landed; reopening clears it.
   if (typeof body.status === "string") {
     if (!["open", "applied"].includes(body.status))

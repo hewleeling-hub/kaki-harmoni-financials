@@ -18,11 +18,23 @@ export function SupplierNoteDocument({
   const isDebit = note.note_type === "debit";
   const title = isDebit ? "Debit Note" : "Credit Note";
 
-  // A debit note is a claim we make on the supplier; a credit note records one
-  // they have granted us. The wording flips accordingly.
-  const statement = isDebit
-    ? "We hereby debit your account with the amount shown below."
-    : "Your credit to our account is recorded below.";
+  // A debit note is normally a claim we make on the supplier; a credit note
+  // records one they have granted us. But a note whose payee is the supplier
+  // themselves is money going the other way — a repayment we are making — and
+  // saying "we hereby debit your account" on it would state the opposite of
+  // what the document is for.
+  const payingTheSupplier =
+    !!note.pay_to_name &&
+    note.pay_to_name.trim().toLowerCase() === note.vendor.trim().toLowerCase();
+
+  const statement = payingTheSupplier
+    ? "The amount shown below is being repaid to you, to the account given under Payment details."
+    : isDebit
+      ? "We hereby debit your account with the amount shown below."
+      : "Your credit to our account is recorded below.";
+
+  const hasPaymentDetails =
+    !!note.pay_to_name || !!note.pay_to_bank || !!note.pay_to_account || !!note.pay_to_qr_url;
 
   return (
     <div>
@@ -146,8 +158,63 @@ export function SupplierNoteDocument({
           <span className="font-semibold">{amountInWords(note.amount)}</span>
         </p>
 
+        {hasPaymentDetails && (
+          <section className="mt-5 flex flex-wrap items-start justify-between gap-6 rounded border border-neutral-300 p-4">
+            <div className="text-[12px]">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-neutral-500">
+                Payment details
+              </p>
+              <table className="border-collapse">
+                <tbody>
+                  {note.pay_to_name && (
+                    <tr>
+                      <td className="pr-4 align-top text-neutral-500">Pay to</td>
+                      <td className="font-semibold">{note.pay_to_name}</td>
+                    </tr>
+                  )}
+                  {note.pay_to_bank && (
+                    <tr>
+                      <td className="pr-4 align-top text-neutral-500">Bank</td>
+                      <td className="font-semibold">{note.pay_to_bank}</td>
+                    </tr>
+                  )}
+                  {note.pay_to_account && (
+                    <tr>
+                      <td className="pr-4 align-top text-neutral-500">Account no.</td>
+                      <td className="font-mono text-base font-semibold tracking-wide">
+                        {note.pay_to_account}
+                      </td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td className="pr-4 align-top text-neutral-500">Amount</td>
+                    <td className="font-semibold">{rm(note.amount)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {note.pay_to_qr_url && (
+              <div className="text-center">
+                {/* Printed at a size a phone camera can actually read. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/api/receipts/view?path=${encodeURIComponent(note.pay_to_qr_url)}`}
+                  alt={`Payment QR for ${note.pay_to_name ?? note.vendor}`}
+                  className="h-[150px] w-[150px] border border-neutral-200 object-contain"
+                />
+                <p className="mt-1 text-[10px] uppercase tracking-widest text-neutral-500">
+                  Scan to pay
+                </p>
+              </div>
+            )}
+          </section>
+        )}
+
         <div className="mt-14 grid grid-cols-2 gap-8 text-xs">
-          {["Issued by", "Acknowledged by (supplier)"].map((l) => (
+          {(payingTheSupplier
+            ? ["Paid by", "Received by (supplier)"]
+            : ["Issued by", "Acknowledged by (supplier)"]
+          ).map((l) => (
             <div key={l}>
               <div className="border-t border-neutral-900 pt-1">{l}</div>
               <div className="mt-6 border-t border-dotted border-neutral-400 pt-1 text-neutral-500">

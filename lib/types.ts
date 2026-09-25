@@ -203,6 +203,13 @@ export type SupplierNote = {
   expense_id: string | null;
   vendor: string;
   amount: number;
+  // Where the money goes when the note is settled. Printed on the document so
+  // it can be paid from the page itself.
+  pay_to_name: string | null;
+  pay_to_bank: string | null;
+  pay_to_account: string | null;
+  /** Storage path of a QR image, served through /api/receipts/view. */
+  pay_to_qr_url: string | null;
   reason: string | null;
   description: string | null;
   status: "open" | "applied";
