@@ -23,6 +23,11 @@ type Draft = {
   amount: string;
   reason: string;
   description: string;
+  // Where the money goes when the note settles. Printed on the document.
+  pay_to_name: string;
+  pay_to_bank: string;
+  pay_to_account: string;
+  pay_to_qr_url: string;
 };
 
 const EMPTY: Draft = {
@@ -33,6 +38,10 @@ const EMPTY: Draft = {
   amount: "",
   reason: "goods_returned",
   description: "",
+  pay_to_name: "",
+  pay_to_bank: "",
+  pay_to_account: "",
+  pay_to_qr_url: "",
 };
 
 export function SupplierNotesList() {
@@ -42,6 +51,7 @@ export function SupplierNotesList() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [uploadingQr, setUploadingQr] = useState(false);
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -68,6 +78,41 @@ export function SupplierNotesList() {
 
   function set<K extends keyof Draft>(k: K, v: Draft[K]) {
     setDraft((d) => ({ ...d, [k]: v }));
+  }
+
+  // The QR goes into the same private bucket as receipts, so it is never on a
+  // public URL; the document renders it through the signed-URL view route.
+  async function uploadQr(file: File) {
+    if (file.size > 5 * 1024 * 1024) {
+      setError("That image is larger than 5MB.");
+      return;
+    }
+    setUploadingQr(true);
+    setError(null);
+    try {
+      const data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () =>
+          resolve(String(reader.result).replace(/^data:[^;]+;base64,/, ""));
+        reader.onerror = () => reject(new Error("Could not read that file"));
+        reader.readAsDataURL(file);
+      });
+      const res = await fetch("/api/receipts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data, media_type: file.type }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(j.error || "Could not upload the QR image");
+        return;
+      }
+      set("pay_to_qr_url", j.path ?? j.url ?? "");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not upload the QR image");
+    } finally {
+      setUploadingQr(false);
+    }
   }
 
   async function save(e: React.FormEvent) {
@@ -260,6 +305,69 @@ export function SupplierNotesList() {
             />
           </label>
         </div>
+
+        {/* Payment details — so the printed note can be paid from the page.
+            Name the supplier here when the note is a repayment going out to
+            them, or ourselves when they are remitting to us. */}
+        <fieldset className="mt-4 rounded-lg border border-neutral-200 p-4">
+          <legend className="px-1 text-xs font-medium uppercase tracking-wide text-neutral-500">
+            Payment details (optional)
+          </legend>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="text-sm">
+              <span className="mb-1 block text-neutral-600">Pay to</span>
+              <input
+                type="text"
+                value={draft.pay_to_name}
+                onChange={(e) => set("pay_to_name", e.target.value)}
+                placeholder={draft.vendor || "account holder's name"}
+                className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="mb-1 block text-neutral-600">Bank</span>
+              <input
+                type="text"
+                value={draft.pay_to_bank}
+                onChange={(e) => set("pay_to_bank", e.target.value)}
+                placeholder="e.g. Maybank"
+                className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="mb-1 block text-neutral-600">Account no.</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={draft.pay_to_account}
+                onChange={(e) => set("pay_to_account", e.target.value)}
+                placeholder="digits only"
+                className="w-full rounded-lg border border-neutral-300 px-3 py-2 font-mono text-sm"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="mb-1 block text-neutral-600">
+                QR to pay (optional)
+              </span>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) uploadQr(f);
+                }}
+                className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-xs"
+              />
+              <span className="mt-1 block text-xs text-neutral-500">
+                {uploadingQr
+                  ? "Uploading…"
+                  : draft.pay_to_qr_url
+                    ? "Attached — it prints on the note"
+                    : "A DuitNow QR screenshot works"}
+              </span>
+            </label>
+          </div>
+        </fieldset>
 
         <div className="mt-4 flex items-center gap-3">
           <button

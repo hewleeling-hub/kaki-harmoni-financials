@@ -6,6 +6,26 @@ import type { Expense } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Where the money goes when the note settles — the payee, their bank and
+ * account, and an optional QR image. All optional: a note can be raised before
+ * anyone knows how it will be paid, and filled in later.
+ */
+function paymentDetails(body: Record<string, unknown>) {
+  const text = (v: unknown) => {
+    const s = String(v ?? "").trim();
+    return s ? s.slice(0, 120) : null;
+  };
+  return {
+    pay_to_name: text(body.pay_to_name),
+    pay_to_bank: text(body.pay_to_bank),
+    // Digits, spaces and dashes only — an account number is not free text, and
+    // a typo here sends the money to a stranger.
+    pay_to_account: text(body.pay_to_account)?.replace(/[^0-9 -]/g, "") || null,
+    pay_to_qr_url: body.pay_to_qr_url ? String(body.pay_to_qr_url) : null,
+  };
+}
+
 // GET /api/supplier-notes — the DN/CN register, newest number first, with the
 // PO number of the purchase each note adjusts.
 export async function GET() {
@@ -90,6 +110,7 @@ export async function POST(req: Request) {
       amount,
       reason: body.reason ? String(body.reason) : null,
       description: body.description ? String(body.description).trim() || null : null,
+      ...paymentDetails(body),
     })
     .select()
     .single();
