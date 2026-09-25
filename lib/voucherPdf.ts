@@ -13,7 +13,7 @@ import type { Expense, Reimbursement } from "./types";
 import { amountInWords } from "./amountInWords";
 import { PAYERS } from "./constants";
 import { gmt8Date } from "./format";
-import { businessConfig } from "../config/business";
+import { businessConfig, entitySubline } from "../config/business";
 
 // A4 in points, with the same 14mm margin the print stylesheet uses.
 const PAGE_W = 595.28;
@@ -112,10 +112,7 @@ export async function buildVoucherPdf(
   text(c, "PETTY CASH VOUCHER", RIGHT, y - 13, { size: 13, bold: true, align: "right" });
   y -= 28;
 
-  const brandLine = businessConfig.registrationNumber
-    ? `trading as ${businessConfig.name} · Co. No. ${businessConfig.registrationNumber}`
-    : `trading as ${businessConfig.name}`;
-  text(c, brandLine, M, y, { size: 7.5, color: MUTED });
+  text(c, entitySubline(), M, y, { size: 7.5, color: MUTED });
   y -= 11;
 
   for (const line of businessConfig.address.lines) {
