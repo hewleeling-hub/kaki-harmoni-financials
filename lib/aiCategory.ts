@@ -13,6 +13,16 @@ const RULES: { category: (typeof EXPENSE_CATEGORIES)[number]; keywords: string[]
     category: "supplies",
     keywords: ["towel", "disinfect", "clean", "soap", "tissue", "glove", "supply", "supplies", "scrub"],
   },
+  // Ahead of `maintenance` deliberately: matching is first-hit-wins, and the
+  // maintenance rule's "part", "spare" and "service" would swallow every one of
+  // these before this rule was ever reached.
+  {
+    category: "maintenance_consumables",
+    keywords: [
+      "descal", "lubricant", "grease", "o-ring", "oring", "sealant", "silicone",
+      "wd-40", "wd40", "washer", "gasket", "filter cartridge", "replacement filter",
+    ],
+  },
   {
     category: "maintenance",
     keywords: ["repair", "fix", "service", "machine", "spare", "part", "hardware", "maintenance"],
@@ -24,6 +34,16 @@ const RULES: { category: (typeof EXPENSE_CATEGORIES)[number]; keywords: string[]
   {
     category: "rent",
     keywords: ["rent", "lease", "rental"],
+  },
+  // Before `equipment`: that rule's "furniture", "chair" and "table" would
+  // otherwise claim a decorative cushion or a display table.
+  {
+    category: "shop_decoration",
+    keywords: [
+      "decor", "ornament", "festive", "christmas", "raya", "deepavali",
+      "lantern", "fairy light", "artificial plant", "vase", "wall art",
+      "picture frame", "bunting", "garland", "wreath",
+    ],
   },
   {
     category: "equipment",

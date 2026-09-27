@@ -30,10 +30,20 @@ export const EXPENSE_CATEGORIES = [
   "cost_of_goods",
   "operating_expenses",
   "maintenance",
+  // Filters, descaler, lubricant, seals, spare washers — bought to keep the
+  // machines running rather than to fix a fault. Separated from `maintenance`
+  // so a month of routine upkeep can be told apart from a repair bill, though
+  // both land on the same P&L line (6280).
+  "maintenance_consumables",
   "utilities",
   "mobile_charges_and_internet",
   "rent",
   "equipment",
+  // Festive and seasonal decor, plants, wall pieces, display props — what makes
+  // the room feel like the room. Non-capital only: a decoration durable and
+  // costly enough to last years is a fixed asset (furniture_and_fittings), not
+  // this.
+  "shop_decoration",
   "marketing",
   "wages",
   "transport",

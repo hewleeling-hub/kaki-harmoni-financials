@@ -98,6 +98,10 @@ const EXPENSE_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   wages: "6110", // Salaries and Wages
   rent: "6210", // Rent and Service Charges
   maintenance: "6280", // Repairs and Maintenance
+  // Same account as a repair: both are the cost of keeping equipment
+  // working, and splitting the P&L line would make the chart harder to
+  // read without telling anyone anything the category itself does not.
+  maintenance_consumables: "6280", // Repairs and Maintenance
   // Cups, lids, straws, serviettes, takeaway bags — bought on one receipt and
   // used up as the café serves, so they are a café cost of sales rather than
   // an overhead. Packaging bought in bulk and counted at a stock take goes to
@@ -118,6 +122,11 @@ const EXPENSE_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   // in, spray bottles, liners.
   wellness_consumables: "5130", // Wellness Consumables
   mobile_charges_and_internet: "6240", // Internet and Telephone
+  // 6360 is the chart's home for non-capital visual material, which is what
+  // shop decoration is. It sits under Sales and Marketing rather than
+  // Premises because how the room looks is part of what is being sold —
+  // say the word and it can have an account of its own instead.
+  shop_decoration: "6360", // Signage and Temporary Promotional Materials
   marketing: "6310", // Digital Advertising
   transport: "6740", // Travel and Transport
   petrol: "6740",
