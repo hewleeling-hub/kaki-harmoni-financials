@@ -98,6 +98,12 @@ const EXPENSE_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   wages: "6110", // Salaries and Wages
   rent: "6210", // Rent and Service Charges
   maintenance: "6280", // Repairs and Maintenance
+  // Cups, lids, straws, serviettes, takeaway bags — bought on one receipt and
+  // used up as the café serves, so they are a café cost of sales rather than
+  // an overhead. Packaging bought in bulk and counted at a stock take goes to
+  // the same account when the take relieves 1270, so both routes land on one
+  // P&L line.
+  cafe_consumables_and_packaging: "5240", // Café Consumables and Packaging
   mobile_charges_and_internet: "6240", // Internet and Telephone
   marketing: "6310", // Digital Advertising
   transport: "6740", // Travel and Transport
