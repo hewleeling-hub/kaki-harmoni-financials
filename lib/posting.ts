@@ -118,9 +118,11 @@ const EXPENSE_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   // Towels are handed to a guest at the chair, so they are a direct cost of
   // the soak rather than an overhead.
   towels_and_linen: "5120", // Towels and Laundry - Direct
-  // What gets used on a guest during a session: the small plates the salts go
-  // in, spray bottles, liners.
-  wellness_consumables: "5130", // Wellness Consumables
+  // What gets used on a guest during a soak: the small plates the salts go in,
+  // spray bottles, liners. Oils and salts themselves have their own account
+  // (5110) and towels another (5120), so this is the rest.
+  spa_consumables: "5130", // Spa Consumables
+  wellness_consumables: "5130", // legacy key, before the account was renamed
   mobile_charges_and_internet: "6240", // Internet and Telephone
   // 6360 is the chart's home for non-capital visual material, which is what
   // shop decoration is. It sits under Sales and Marketing rather than

@@ -26,7 +26,7 @@ export const EXPENSE_CATEGORIES = [
   "hygiene_consumables",
   "cleaning_supplies",
   "towels_and_linen",
-  "wellness_consumables",
+  "spa_consumables",
   "cost_of_goods",
   "operating_expenses",
   "maintenance",
