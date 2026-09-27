@@ -68,7 +68,7 @@ const EXTRACTION_SCHEMA = {
       type: "string",
       enum: ALL_CATEGORIES,
       description:
-        "If expense_type is fixed_asset, the asset class (kitchen_equipment, spa_machine_and_water_filter, furniture_and_fittings, electrical_equipment, office_equipment, computer, printer). If prepayment, what it covers (company_secretarial_and_office_address, subscription, rent, insurance, licence, domain_and_hosting). If stock, the stock class. Otherwise the best-fit expense category (cafe_consumables_and_packaging for cups, lids, straws, serviettes and takeaway bags, supplies, cost_of_goods, operating_expenses, maintenance, utilities, rent, equipment, marketing, wages, transport, petrol, toll, meals).",
+        "If expense_type is fixed_asset, the asset class (kitchen_equipment, spa_machine_and_water_filter, furniture_and_fittings, electrical_equipment, office_equipment, computer, printer). If prepayment, what it covers (company_secretarial_and_office_address, subscription, rent, insurance, licence, domain_and_hosting). If stock, the stock class. Otherwise the best-fit expense category (cafe_consumables_and_packaging for cups, lids, straws, serviettes and takeaway bags, office_supplies_and_stationery for thermal receipt rolls, printer paper and stationery, hygiene_consumables for chef caps, aprons, gloves and hairnets, supplies, cost_of_goods, operating_expenses, maintenance, utilities, rent, equipment, marketing, wages, transport, petrol, toll, meals).",
     },
   },
   required: [
