@@ -22,6 +22,8 @@ export const PAYMENT_METHODS = [
 export const EXPENSE_CATEGORIES = [
   "supplies",
   "cafe_consumables_and_packaging",
+  "office_supplies_and_stationery",
+  "hygiene_consumables",
   "cost_of_goods",
   "operating_expenses",
   "maintenance",

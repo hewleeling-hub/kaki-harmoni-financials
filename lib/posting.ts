@@ -104,6 +104,12 @@ const EXPENSE_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   // the same account when the take relieves 1270, so both routes land on one
   // P&L line.
   cafe_consumables_and_packaging: "5240", // Café Consumables and Packaging
+  // Thermal receipt rolls, printer paper, pens, files. An overhead, not a cost
+  // of serving, so it sits in 64xx rather than with the café's cost of sales.
+  office_supplies_and_stationery: "6410", // Office Supplies and Stationery
+  // Chef caps, aprons, gloves, hairnets — worn by the people serving rather
+  // than used on a customer, so they belong with the staff costs.
+  hygiene_consumables: "6180", // Uniforms and Protective Items
   mobile_charges_and_internet: "6240", // Internet and Telephone
   marketing: "6310", // Digital Advertising
   transport: "6740", // Travel and Transport
@@ -115,7 +121,8 @@ const EXPENSE_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   // category and guessing would misstate the P&L:
   //   utilities          → electricity and water are separate accounts (phone
   //                        and internet have their own category)
-  //   supplies           → cleaning supplies vs office stationery
+  //   supplies           → cleaning supplies (6260) vs office stationery
+  //                        (6410, now its own category) vs café consumables
   //   cost_of_goods      → coffee / milk / food / packaging are separate
   //   operating_expenses → too broad to place
   //   equipment          → may be an asset rather than an expense
