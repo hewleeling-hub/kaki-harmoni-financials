@@ -62,6 +62,10 @@ export type LineItem = {
   quantity: number;
   unit_price: number;
   amount: number;
+  // Whether the stall/shop gave a slip for this line. Absent on rows captured
+  // before the flag existed, which is why it is three-valued: true, false, or
+  // not recorded — only an explicit false is claimed as unsupported.
+  has_slip?: boolean;
 };
 
 export type Expense = {
@@ -94,6 +98,9 @@ export type Expense = {
   payer: string;
   expense_type: string;
   is_settled: boolean;
+  // No supplier document behind this purchase (wet market, hawker, parking):
+  // the signed voucher is the evidence instead of a receipt.
+  self_certified: boolean;
   receipt_url: string | null;
   ai_category: string | null;
   ai_category_source: string | null;

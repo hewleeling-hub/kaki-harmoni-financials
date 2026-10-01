@@ -1,13 +1,14 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { PettyCashVoucher } from "@/components/PettyCashVoucher";
+import { PurchaseVoucher } from "@/components/PurchaseVoucher";
 import type { Expense, Reimbursement } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-// Printable petty cash voucher for a purchase someone fronted out of their own
-// pocket. Reached from the Purchases tab; the PV number and the date come from
-// the linked reimbursement (the voucher is dated the day the money moved back).
+// Printable voucher for a purchase someone fronted out of their own pocket, or
+// cash handed straight out of the tin. Reached from the Purchases tab; the PV
+// number and the date come from the linked reimbursement (the voucher is dated
+// the day the money moved back). lib/voucher picks which of the three it is.
 export default async function VoucherPage({
   params,
 }: {
@@ -30,7 +31,7 @@ export default async function VoucherPage({
     .maybeSingle();
 
   return (
-    <PettyCashVoucher
+    <PurchaseVoucher
       expense={expense as Expense}
       reimbursement={(reimbursement as Reimbursement) ?? null}
     />

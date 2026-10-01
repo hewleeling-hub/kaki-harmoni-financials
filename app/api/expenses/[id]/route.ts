@@ -56,6 +56,9 @@ export async function PATCH(
           quantity: Number(li?.quantity) || 0,
           unit_price: Number(li?.unit_price) || 0,
           amount: Number(li?.amount) || 0,
+          // Three-valued on purpose: left off entirely unless the form asked
+          // whether the stall gave a slip (see lib/voucher).
+          ...(typeof li?.has_slip === "boolean" ? { has_slip: li.has_slip } : {}),
         }))
         .filter((li: { description: string }) => li.description)
     : [];
@@ -71,6 +74,7 @@ export async function PATCH(
     subscription_months,
     discount,
     receipt_url: body.receipt_url ? String(body.receipt_url) : null,
+    self_certified: !!body.self_certified,
     line_items: lineItems,
     comments: body.comments ? String(body.comments) : null,
     ...suggestExpenseCategory(vendor, body.description),
@@ -79,7 +83,13 @@ export async function PATCH(
 
   let { error } = await supabase.from("expenses").update(patch).eq("id", id);
   if (error) {
-    const missing = ["line_items", "comments", "subscription_months", "discount"].filter((c) =>
+    const missing = [
+      "line_items",
+      "comments",
+      "subscription_months",
+      "discount",
+      "self_certified",
+    ].filter((c) =>
       new RegExp(c, "i").test(error!.message),
     );
     if (missing.length) {

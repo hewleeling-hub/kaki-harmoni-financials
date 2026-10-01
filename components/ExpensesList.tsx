@@ -5,8 +5,8 @@ import Link from "next/link";
 import type { Expense } from "@/lib/types";
 import { PAYERS, EXPENSE_TYPES, REIMBURSABLE_PAYERS } from "@/lib/constants";
 
-// A purchase has a petty cash voucher when someone fronted the money (and is
-// owed it back) or when cash was handed over directly from the tin.
+// A purchase has a voucher when someone fronted the money (and is owed it back)
+// or when cash was handed over directly from the tin.
 const hasVoucher = (payer: string) =>
   REIMBURSABLE_PAYERS.includes(payer) || payer === "petty_cash";
 import { humanise, rm } from "@/lib/format";
@@ -99,6 +99,15 @@ export function ExpensesList() {
         <h1 className="text-2xl font-bold tracking-tight">Purchases</h1>
         <div className="flex items-center gap-2">
           <ExportButton type="expenses" />
+          {/* The market run happens most days and has its own paperwork, so it
+              gets its own way in rather than a checkbox three screens deep. */}
+          <Link
+            href="/expenses/new?market=1"
+            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium hover:bg-neutral-50"
+            title="Wet market, hawker or parking — no supplier receipt"
+          >
+            + Market Trip
+          </Link>
           <Link
             href="/expenses/new"
             className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white"
@@ -219,7 +228,7 @@ export function ExpensesList() {
                       <Link
                         href={`/expenses/${e.id}/voucher`}
                         className="text-emerald-700 underline underline-offset-2"
-                        title="Open the petty cash voucher"
+                        title="Open the voucher"
                       >
                         {e.po_number ?? "voucher"}
                       </Link>
@@ -233,6 +242,14 @@ export function ExpensesList() {
                   <td className="px-4 py-3">
                     <div className="font-medium">
                       {e.vendor}
+                      {e.self_certified && (
+                        <span
+                          className="ml-2 rounded bg-neutral-100 px-1.5 py-0.5 text-xs font-normal text-neutral-500"
+                          title="No supplier receipt — evidenced by a signed voucher"
+                        >
+                          self-certified
+                        </span>
+                      )}
                       {e.receipt_url && (
                         <a
                           href={
@@ -344,7 +361,7 @@ export function ExpensesList() {
                         <Link
                           href={`/expenses/${e.id}/voucher`}
                           className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50"
-                          title="Petty cash voucher"
+                          title="Open the voucher"
                         >
                           Voucher
                         </Link>
