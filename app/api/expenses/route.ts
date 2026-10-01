@@ -80,6 +80,9 @@ export async function POST(req: Request) {
           quantity: Number(li?.quantity) || 0,
           unit_price: Number(li?.unit_price) || 0,
           amount: Number(li?.amount) || 0,
+          // Three-valued on purpose: left off entirely unless the form asked
+          // whether the stall gave a slip (see lib/voucher).
+          ...(typeof li?.has_slip === "boolean" ? { has_slip: li.has_slip } : {}),
         }))
         .filter((li: { description: string }) => li.description)
     : [];
@@ -95,6 +98,7 @@ export async function POST(req: Request) {
     subscription_months,
     discount,
     receipt_url: body.receipt_url ? String(body.receipt_url) : null,
+    self_certified: !!body.self_certified,
     line_items: lineItems,
     comments: body.comments ? String(body.comments) : null,
     ...suggestion,
@@ -109,7 +113,13 @@ export async function POST(req: Request) {
   // If an optional column isn't present yet (migration not applied), drop just
   // the offending field(s) and retry so the core save still works.
   if (error) {
-    const missing = ["line_items", "comments", "subscription_months", "discount"].filter((c) =>
+    const missing = [
+      "line_items",
+      "comments",
+      "subscription_months",
+      "discount",
+      "self_certified",
+    ].filter((c) =>
       new RegExp(c, "i").test(error!.message),
     );
     if (missing.length) {

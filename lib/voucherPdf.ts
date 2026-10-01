@@ -1,4 +1,4 @@
-// Petty cash voucher as a real PDF file.
+// The purchase voucher as a real PDF file.
 //
 // Drawn directly with pdf-lib rather than screenshotting the page, so the text
 // stays selectable and the file stays small — and so a printerless device can
@@ -11,8 +11,7 @@ import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import type { Expense, Reimbursement } from "./types";
 import { amountInWords } from "./amountInWords";
-import { PAYERS } from "./constants";
-import { gmt8Date } from "./format";
+import { voucherView, slipLabel } from "./voucher";
 import { businessConfig, entitySubline } from "../config/business";
 
 // A4 in points, with the same 14mm margin the print stylesheet uses.
@@ -72,6 +71,21 @@ function rule(page: PDFPage, y: number, thickness = 0.6, color = RULE) {
   page.drawLine({ start: { x: M, y }, end: { x: RIGHT, y }, thickness, color });
 }
 
+/** Break `s` into lines that fit `maxW` at `size`. */
+function wrap(font: PDFFont, s: string, size: number, maxW: number): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const w of s.split(/\s+/)) {
+    const candidate = line ? `${line} ${w}` : w;
+    if (font.widthOfTextAtSize(candidate, size) > maxW && line) {
+      lines.push(line);
+      line = w;
+    } else line = candidate;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
 export async function buildVoucherPdf(
   expense: Expense,
   reimbursement: Reimbursement | null,
@@ -87,29 +101,17 @@ export async function buildVoucherPdf(
   const page = doc.addPage([PAGE_W, PAGE_H]);
   const c: Ctx = { page, reg, bold };
 
-  // Same two modes as the on-screen voucher (see components/PettyCashVoucher).
-  const isDirect = expense.payer === "petty_cash" && !reimbursement;
-  const pvNumber = reimbursement?.pv_number ?? expense.pv_number;
-  const paidTo = isDirect
-    ? expense.vendor
-    : (reimbursement?.owed_to ??
-      PAYERS.find((p) => p.value === expense.payer)?.label ??
-      expense.payer.replace(/_/g, " "));
-  const voucherDate = isDirect
-    ? expense.expense_date
-    : reimbursement?.settled_at
-      ? gmt8Date(reimbursement.settled_at)
-      : null;
-  const beingForLabel = isDirect ? "Being payment for" : "Being reimbursement for";
-  const beingFor = isDirect
-    ? expense.description || expense.category.replace(/_/g, " ")
-    : expense.vendor;
+  // Which voucher this is, and its wording — shared with the on-screen copy
+  // (see components/PurchaseVoucher) so the two can't drift apart.
+  const v = voucherView(expense, reimbursement);
+  const selfCertified = v.selfCertified;
+  const beingFor = v.beingFor ?? v.beingForFallback;
 
   let y = PAGE_H - M;
 
   // ── masthead ──────────────────────────────────────────────────────────────
   text(c, businessConfig.legalName, M, y - 14, { size: 15, bold: true });
-  text(c, "PETTY CASH VOUCHER", RIGHT, y - 13, { size: 13, bold: true, align: "right" });
+  text(c, v.title.toUpperCase(), RIGHT, y - 13, { size: 13, bold: true, align: "right" });
   y -= 28;
 
   text(c, entitySubline(), M, y, { size: 7.5, color: MUTED });
@@ -122,8 +124,8 @@ export async function buildVoucherPdf(
 
   let metaY = PAGE_H - M - 34;
   for (const [label, value] of [
-    ["PV No.", pvNumber ?? "—"],
-    ["Date", voucherDate ?? "—"],
+    ["PV No.", v.pvNumber ?? "—"],
+    ["Date", v.voucherDate ?? "—"],
   ] as const) {
     text(c, label, RIGHT - 90, metaY, { size: 7.5, color: MUTED });
     text(c, value, RIGHT, metaY, { size: 9, bold: true, align: "right" });
@@ -137,9 +139,9 @@ export async function buildVoucherPdf(
   // ── who and what ──────────────────────────────────────────────────────────
   const colR = M + 260;
   text(c, "Paid to", M, y, { size: 7.5, color: MUTED });
-  text(c, beingForLabel, colR, y, { size: 7.5, color: MUTED });
+  text(c, v.beingForLabel, colR, y, { size: 7.5, color: MUTED });
   y -= 13;
-  text(c, paidTo, M, y, { size: 11, bold: true });
+  text(c, v.paidTo, M, y, { size: 11, bold: true });
   text(c, beingFor, colR, y, { size: 9, bold: true });
   y -= 20;
 
@@ -153,10 +155,13 @@ export async function buildVoucherPdf(
   y -= 16;
 
   // ── particulars ───────────────────────────────────────────────────────────
-  const qtyX = RIGHT - 150;
   const amtX = RIGHT;
+  const slipX = RIGHT - 105;
+  const qtyX = selfCertified ? RIGHT - 165 : RIGHT - 150;
   text(c, "PARTICULARS", M, y, { size: 7, color: MUTED });
   text(c, "QTY", qtyX, y, { size: 7, color: MUTED, align: "right" });
+  if (selfCertified)
+    text(c, "SLIP", slipX, y, { size: 7, color: MUTED, align: "right" });
   text(c, "AMOUNT (RM)", amtX, y, { size: 7, color: MUTED, align: "right" });
   y -= 8;
   rule(page, y);
@@ -168,32 +173,29 @@ export async function buildVoucherPdf(
       ? items.map((li) => ({
           desc: li.description,
           qty: li.quantity > 0 ? String(li.quantity) : "",
+          slip: slipLabel(li),
           amt: Number(li.amount),
         }))
       : [
           {
             desc: expense.description || expense.category.replace(/_/g, " "),
             qty: "",
+            slip: "",
             amt: Number(expense.amount),
           },
         ];
 
   for (const r of rows) {
     // Wrap long particulars rather than letting them run under the amount.
-    const maxW = qtyX - M - 12;
-    const words = r.desc.split(/\s+/);
-    let line = "";
-    const lines: string[] = [];
-    for (const w of words) {
-      const candidate = line ? `${line} ${w}` : w;
-      if (reg.widthOfTextAtSize(candidate, 9) > maxW && line) {
-        lines.push(line);
-        line = w;
-      } else line = candidate;
-    }
-    if (line) lines.push(line);
+    const lines = wrap(reg, r.desc, 9, qtyX - M - 12);
 
     text(c, r.qty, qtyX, y, { size: 9, align: "right" });
+    if (selfCertified && r.slip)
+      text(c, r.slip, slipX, y, {
+        size: 9,
+        align: "right",
+        color: r.slip === "No" ? MUTED : INK,
+      });
     text(c, r.amt.toFixed(2), amtX, y, { size: 9, align: "right" });
     for (const l of lines) {
       text(c, l, M, y, { size: 9 });
@@ -243,16 +245,46 @@ export async function buildVoucherPdf(
   rule(page, y);
   y -= 16;
 
+  if (v.slipSummary) {
+    text(c, v.slipSummary, M, y, { size: 8, color: MUTED });
+    y -= 14;
+  }
+
   if (expense.comments) {
     text(c, "Notes:", M, y, { size: 7.5, color: MUTED });
-    text(c, expense.comments, M + 34, y, { size: 8 });
-    y -= 16;
+    for (const l of wrap(reg, expense.comments, 8, RIGHT - M - 34)) {
+      text(c, l, M + 34, y, { size: 8 });
+      y -= 11;
+    }
+    y -= 5;
+  }
+
+  // With no supplier receipt to attach, this signed declaration is the
+  // document — so it sits directly above the signature it refers to.
+  if (v.declaration) {
+    const lines = wrap(reg, v.declaration, 8, RIGHT - M - 20);
+    const boxH = 18 + lines.length * 11;
+    page.drawRectangle({
+      x: M,
+      y: y - boxH + 10,
+      width: RIGHT - M,
+      height: boxH,
+      borderColor: MUTED,
+      borderWidth: 0.6,
+    });
+    text(c, "DECLARATION", M + 10, y, { size: 7, bold: true, color: MUTED });
+    y -= 12;
+    for (const l of lines) {
+      text(c, l, M + 10, y, { size: 8 });
+      y -= 11;
+    }
+    y -= 12;
   }
 
   // ── signatures ────────────────────────────────────────────────────────────
-  y -= 56;
+  y -= selfCertified ? 34 : 56;
   const colW = (RIGHT - M) / 3;
-  ["Received by", "Approved by", "Paid by"].forEach((label, i) => {
+  v.signatures.forEach((label, i) => {
     const x = M + i * colW;
     const w = colW - 18;
     page.drawLine({
@@ -261,7 +293,7 @@ export async function buildVoucherPdf(
       thickness: 0.8,
       color: INK,
     });
-    text(c, label, x, y - 10, { size: 7.5 });
+    text(c, label, x, y - 10, { size: selfCertified ? 6.8 : 7.5 });
     page.drawLine({
       start: { x, y: y - 34 },
       end: { x: x + w, y: y - 34 },

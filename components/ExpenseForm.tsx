@@ -32,7 +32,14 @@ function categoryLabel(type: string): string {
   return "Category";
 }
 
-export function ExpenseForm({ initial }: { initial?: Expense }) {
+export function ExpenseForm({
+  initial,
+  market = false,
+}: {
+  initial?: Expense;
+  /** Start in market mode (reached from "+ Market trip"). */
+  market?: boolean;
+}) {
   const router = useRouter();
   const editing = !!initial;
 
@@ -46,7 +53,15 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
     description: initial?.description ?? "",
     amount: initial ? String(initial.amount) : "",
     expense_date: initial?.expense_date ?? today(),
-    category: initial ? (initCatCustom ? "other" : initial.category) : "supplies",
+    // A market trip is almost always food for the kitchen, so start there
+    // rather than making the common case a two-step.
+    category: initial
+      ? initCatCustom
+        ? "other"
+        : initial.category
+      : market
+        ? "cost_of_goods"
+        : "supplies",
     payer: initial?.payer ?? "company",
     expense_type: initType,
     subscription_months: initial?.subscription_months
@@ -55,6 +70,12 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
     discount: initial?.discount ? String(initial.discount) : "",
     comments: initial?.comments ?? "",
   });
+  // A wet market, hawker or parking purchase: no supplier receipt exists, so
+  // the signed voucher is the evidence and each line records whether the stall
+  // gave a slip.
+  const [selfCertified, setSelfCertified] = useState(
+    initial?.self_certified ?? market,
+  );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -71,6 +92,7 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
     quantity: string;
     unit_price: string;
     amount: string;
+    has_slip: boolean;
   };
   const [lineItems, setLineItems] = useState<LineDraft[]>(
     (initial?.line_items ?? []).map((li) => ({
@@ -78,22 +100,39 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
       quantity: String(li.quantity),
       unit_price: String(li.unit_price),
       amount: String(li.amount),
+      has_slip: li.has_slip === true,
     })),
   );
+  // The row to put the cursor in after "+ Add line" / Enter, so a market
+  // schedule can be typed straight through without reaching for the mouse.
+  const [focusLine, setFocusLine] = useState<number | null>(null);
 
-  function updateLine(i: number, field: keyof LineDraft, value: string) {
+  function updateLine(
+    i: number,
+    field: keyof LineDraft,
+    value: string | boolean,
+  ) {
     setLineItems((items) =>
       items.map((li, idx) => (idx === i ? { ...li, [field]: value } : li)),
     );
   }
   function addLine() {
-    setLineItems((items) => [
-      ...items,
-      { description: "", quantity: "1", unit_price: "", amount: "" },
-    ]);
+    setLineItems((items) => {
+      setFocusLine(items.length);
+      return [
+        ...items,
+        { description: "", quantity: "1", unit_price: "", amount: "", has_slip: false },
+      ];
+    });
   }
   function removeLine(i: number) {
     setLineItems((items) => items.filter((_, idx) => idx !== i));
+  }
+  // Enter at the end of the last row starts the next one.
+  function onLineKeyDown(e: React.KeyboardEvent, i: number) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (i === lineItems.length - 1) addLine();
   }
   const lineItemsTotal = lineItems.reduce(
     (a, li) => a + (Number(li.amount) || 0),
@@ -104,6 +143,11 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
     0,
     Math.round((lineItemsTotal - (Number(form.discount) || 0)) * 100) / 100,
   );
+  // On a market trip there is no receipt grand total to reconcile against: the
+  // lines *are* the total, so the amount follows them instead of being typed
+  // twice and risking a mismatch.
+  const totalledFromLines = selfCertified && lineItems.length > 0;
+  const effectiveAmount = totalledFromLines ? netTotal : Number(form.amount) || 0;
 
   // When "Other" is picked, the typed label becomes the category (stored as
   // free text). Common ones can be promoted into EXPENSE_CATEGORIES later.
@@ -204,6 +248,8 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
               quantity: li.quantity != null ? String(li.quantity) : "1",
               unit_price: li.unit_price != null ? String(li.unit_price) : "",
               amount: li.amount != null ? String(li.amount) : "",
+              // Scanned from a document, so the slip exists by definition.
+              has_slip: true,
             }),
           ),
         );
@@ -226,8 +272,13 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
     e.preventDefault();
     setError(null);
     if (!form.vendor.trim()) return setError("Vendor is required");
-    const amt = Number(form.amount);
-    if (!amt || amt <= 0) return setError("Amount must be greater than zero");
+    const amt = effectiveAmount;
+    if (!amt || amt <= 0)
+      return setError(
+        totalledFromLines
+          ? "Add at least one line with an amount"
+          : "Amount must be greater than zero",
+      );
 
     setBusy(true);
     const res = await fetch(
@@ -246,14 +297,26 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
             ? Number(form.subscription_months) || null
             : null,
           receipt_url: receiptPath,
+          self_certified: selfCertified,
           line_items: lineItems
             .filter((li) => li.description.trim())
-            .map((li) => ({
-              description: li.description.trim(),
-              quantity: Number(li.quantity) || 0,
-              unit_price: Number(li.unit_price) || 0,
-              amount: Number(li.amount) || 0,
-            })),
+            .map((li) => {
+              const quantity = Number(li.quantity) || 0;
+              const amount = Number(li.amount) || 0;
+              return {
+                description: li.description.trim(),
+                quantity,
+                // At the market only the item and what it cost get typed, so
+                // fill the unit price in from them rather than storing zero.
+                unit_price:
+                  Number(li.unit_price) ||
+                  (quantity > 0 ? Math.round((amount / quantity) * 100) / 100 : 0),
+                amount,
+                // Only claimed where it was actually asked — a purchase with a
+                // receipt leaves the flag unset rather than saying "no slip".
+                ...(selfCertified ? { has_slip: li.has_slip } : {}),
+              };
+            }),
         }),
       },
     );
@@ -283,16 +346,22 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
   return (
     <div className="mx-auto max-w-lg">
       <h1 className="mb-4 text-2xl font-bold tracking-tight">
-        {editing ? "Edit Purchase" : "New Purchase"}
+        {editing
+          ? "Edit Purchase"
+          : selfCertified
+            ? "New Market Trip"
+            : "New Purchase"}
       </h1>
       <div className="mb-4 rounded-2xl border border-dashed border-emerald-300 bg-emerald-50 p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-emerald-900">
-              📷 Scan a receipt
+              {selfCertified ? "📷 Photo of the slips" : "📷 Scan a receipt"}
             </p>
             <p className="text-xs text-emerald-700">
-              Snap a photo or upload a PDF and we&apos;ll fill in the details for you.
+              {selfCertified
+                ? "Lay whatever slips you got out together and snap one photo — it attaches to this voucher."
+                : "Snap a photo or upload a PDF and we'll fill in the details for you."}
             </p>
           </div>
           <label
@@ -334,12 +403,16 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
         className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-5"
       >
         <label className="block text-sm">
-          <span className="mb-1 block text-neutral-600">Vendor</span>
+          <span className="mb-1 block text-neutral-600">
+            {selfCertified ? "Bought at" : "Vendor"}
+          </span>
           <input
             value={form.vendor}
             onChange={(e) => set("vendor", e.target.value)}
             className="w-full rounded-lg border border-neutral-300 px-3 py-2"
-            placeholder="e.g. Eco Clean Supply"
+            placeholder={
+              selfCertified ? "e.g. Pudu Wet Market" : "e.g. Eco Clean Supply"
+            }
           />
         </label>
 
@@ -358,14 +431,25 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
         <div className="grid grid-cols-2 gap-3">
           <label className="block text-sm">
             <span className="mb-1 block text-neutral-600">Amount (RM)</span>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={form.amount}
-              onChange={(e) => set("amount", e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2"
-            />
+            {totalledFromLines ? (
+              <>
+                <div className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 font-semibold tabular-nums text-neutral-700">
+                  {rm(netTotal)}
+                </div>
+                <span className="mt-1 block text-xs text-neutral-400">
+                  Added up from the lines below.
+                </span>
+              </>
+            ) : (
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.amount}
+                onChange={(e) => set("amount", e.target.value)}
+                className="w-full rounded-lg border border-neutral-300 px-3 py-2"
+              />
+            )}
           </label>
           <label className="block text-sm">
             <span className="mb-1 block text-neutral-600">Date</span>
@@ -494,9 +578,39 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
           </label>
         </div>
 
+        {/* The one question that decides whether this purchase is evidenced by
+            a supplier document or by a signature. */}
+        <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+          <label className="flex cursor-pointer items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={selfCertified}
+              onChange={(e) => setSelfCertified(e.target.checked)}
+              className="mt-0.5 h-4 w-4"
+            />
+            <span>
+              <span className="font-medium">
+                No supplier receipt — self-certified
+              </span>
+              <span className="mt-0.5 block text-xs text-neutral-500">
+                Wet market, hawker, parking. Prints a Market Purchase Voucher
+                with a signed declaration instead of needing a receipt.
+              </span>
+            </span>
+          </label>
+          {selfCertified && form.payer === "company" && (
+            <p className="mt-2 rounded-md bg-amber-50 px-2 py-1.5 text-xs text-amber-800">
+              This is normally cash someone fronted — pick the owner who paid
+              above, so the voucher shows who is owed.
+            </p>
+          )}
+        </div>
+
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-sm text-neutral-600">Line items (optional)</span>
+            <span className="text-sm text-neutral-600">
+              {selfCertified ? "What was bought" : "Line items (optional)"}
+            </span>
             <button
               type="button"
               onClick={addLine}
@@ -507,15 +621,23 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
           </div>
           {lineItems.length === 0 ? (
             <p className="text-xs text-neutral-400">
-              Scan a receipt to itemise automatically, or add lines manually.
+              {selfCertified
+                ? "Add a line per item — chicken, kangkung, taufu. Enter starts the next one."
+                : "Scan a receipt to itemise automatically, or add lines manually."}
             </p>
           ) : (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs text-neutral-400">
                 <span className="flex-1">Item</span>
                 <span className="w-14 text-center">Qty</span>
-                <span className="w-20 text-center">Unit</span>
+                {/* At the market nobody notes a unit price — item and total. */}
+                {!selfCertified && <span className="w-20 text-center">Unit</span>}
                 <span className="w-24 text-center">Amount</span>
+                {selfCertified && (
+                  <span className="w-10 text-center" title="Did the stall give a slip?">
+                    Slip
+                  </span>
+                )}
                 <span className="w-4" />
               </div>
               {lineItems.map((li, i) => (
@@ -523,6 +645,8 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
                   <input
                     value={li.description}
                     onChange={(e) => updateLine(i, "description", e.target.value)}
+                    onKeyDown={(e) => onLineKeyDown(e, i)}
+                    autoFocus={focusLine === i}
                     placeholder="Item"
                     className="min-w-0 flex-1 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
                   />
@@ -531,22 +655,39 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
                     step="0.01"
                     value={li.quantity}
                     onChange={(e) => updateLine(i, "quantity", e.target.value)}
+                    onKeyDown={(e) => onLineKeyDown(e, i)}
                     className="w-14 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
                   />
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={li.unit_price}
-                    onChange={(e) => updateLine(i, "unit_price", e.target.value)}
-                    className="w-20 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
-                  />
+                  {!selfCertified && (
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={li.unit_price}
+                      onChange={(e) => updateLine(i, "unit_price", e.target.value)}
+                      className="w-20 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
+                    />
+                  )}
                   <input
                     type="number"
                     step="0.01"
                     value={li.amount}
                     onChange={(e) => updateLine(i, "amount", e.target.value)}
+                    onKeyDown={(e) => onLineKeyDown(e, i)}
                     className="w-24 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm"
                   />
+                  {selfCertified && (
+                    <label
+                      className="flex w-10 cursor-pointer justify-center"
+                      title="Tick if the stall gave a slip for this item"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={li.has_slip}
+                        onChange={(e) => updateLine(i, "has_slip", e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                    </label>
+                  )}
                   <button
                     type="button"
                     onClick={() => removeLine(i)}
@@ -587,7 +728,8 @@ export function ExpenseForm({ initial }: { initial?: Expense }) {
                   <span>Total</span>
                   <span className="tabular-nums">{rm(netTotal)}</span>
                 </div>
-                {form.amount &&
+                {!totalledFromLines &&
+                  form.amount &&
                   Math.abs(netTotal - (Number(form.amount) || 0)) > 0.01 && (
                     <button
                       type="button"
