@@ -6,7 +6,7 @@
 // the printed copy and the downloaded copy end up disagreeing.
 
 import type { Expense, Reimbursement, LineItem } from "./types";
-import { PAYERS } from "./constants";
+import { payerLabel } from "./constants";
 import { gmt8Date } from "./format";
 import { businessConfig } from "../config/business";
 
@@ -48,9 +48,7 @@ export function voucherView(
 
   const paidTo = isDirect
     ? expense.vendor
-    : (reimbursement?.owed_to ??
-      PAYERS.find((p) => p.value === expense.payer)?.label ??
-      expense.payer.replace(/_/g, " "));
+    : (reimbursement?.owed_to ?? payerLabel(expense.payer));
 
   // "Paid to" already names the payee on a direct voucher, so the second field
   // says what the money was for instead of repeating the name.

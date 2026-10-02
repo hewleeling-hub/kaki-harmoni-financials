@@ -4,14 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { computeReport, reportRange } from "@/lib/reports";
 import { getSalesLedger } from "@/lib/sales";
 import { dayBounds, today, timeOfDay, gmt8Date } from "@/lib/format";
-import { PAYERS, REIMBURSABLE_PAYERS } from "@/lib/constants";
+import { REIMBURSABLE_PAYERS, payerLabel } from "@/lib/constants";
 import type { Session, Sale, Chair } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-
-function payerLabel(v: string): string {
-  return PAYERS.find((p) => p.value === v)?.label ?? v;
-}
 
 // Build a single- or multi-sheet workbook and return it as an .xlsx download.
 function workbookResponse(

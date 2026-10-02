@@ -8,8 +8,10 @@ import {
   PREPAYMENT_CATEGORIES,
   STOCK_CATEGORIES,
   PAYERS,
+  RETIRED_PAYERS,
   EXPENSE_TYPES,
   REIMBURSABLE_PAYERS,
+  payerLabel,
 } from "@/lib/constants";
 import { amortise, isPrepaid } from "@/lib/posting";
 import { humanise, today, rm } from "@/lib/format";
@@ -550,6 +552,14 @@ export function ExpenseForm({
                   {p.label}
                 </option>
               ))}
+              {/* A retired payer is offered only on a purchase that already
+                  names them. Without this the select would fall back to its
+                  first option and quietly reassign someone else's purchase. */}
+              {RETIRED_PAYERS.filter((p) => p.value === form.payer).map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label} — no longer active
+                </option>
+              ))}
             </select>
           </label>
           <label className="block text-sm">
@@ -762,7 +772,7 @@ export function ExpenseForm({
           <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
             We&apos;ll log this as owed to{" "}
             <strong>
-              {PAYERS.find((p) => p.value === form.payer)?.label ?? form.payer}
+              {payerLabel(form.payer)}
             </strong>{" "}
             and create a reimbursement to settle later.
           </div>

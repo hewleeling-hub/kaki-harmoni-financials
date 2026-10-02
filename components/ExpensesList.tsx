@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Expense } from "@/lib/types";
-import { PAYERS, EXPENSE_TYPES, REIMBURSABLE_PAYERS } from "@/lib/constants";
+import {
+  ALL_PAYERS,
+  EXPENSE_TYPES,
+  REIMBURSABLE_PAYERS,
+  payerLabel,
+} from "@/lib/constants";
 
 // A purchase has a voucher when someone fronted the money (and is owed it back)
 // or when cash was handed over directly from the tin.
@@ -124,7 +129,7 @@ export function ExpensesList() {
           className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
         >
           <option value="all">All payers</option>
-          {PAYERS.map((p) => (
+          {ALL_PAYERS.map((p) => (
             <option key={p.value} value={p.value}>
               {p.label}
             </option>
@@ -323,8 +328,7 @@ export function ExpensesList() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-neutral-600">
-                    {PAYERS.find((p) => p.value === e.payer)?.label ??
-                      e.payer.replace(/_/g, " ")}
+                    {payerLabel(e.payer)}
                   </td>
                   <td className="px-4 py-3 text-neutral-600">
                     {humanise(e.expense_type)}

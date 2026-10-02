@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  PAYERS,
   EXPENSE_TYPES,
   REIMBURSABLE_PAYERS,
+  isKnownPayer,
+  payerLabel,
 } from "@/lib/constants";
 import { suggestExpenseCategory } from "@/lib/aiCategory";
 
@@ -30,7 +31,7 @@ export async function PATCH(
       { error: "Amount must be greater than zero" },
       { status: 400 },
     );
-  if (!PAYERS.some((p) => p.value === payer))
+  if (!isKnownPayer(payer))
     return NextResponse.json({ error: "Invalid payer" }, { status: 400 });
   if (!EXPENSE_TYPES.some((t) => t.value === expense_type))
     return NextResponse.json({ error: "Invalid expense type" }, { status: 400 });
@@ -110,7 +111,7 @@ export async function PATCH(
     .maybeSingle();
 
   if (shouldOwe) {
-    const owed_to = PAYERS.find((p) => p.value === payer)?.label ?? payer;
+    const owed_to = payerLabel(payer);
     if (existing) {
       await supabase
         .from("reimbursements")

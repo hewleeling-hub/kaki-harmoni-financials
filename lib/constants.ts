@@ -53,14 +53,42 @@ export const EXPENSE_CATEGORIES = [
   "other",
 ] as const;
 
+/** Who can be chosen as the payer on a NEW purchase. */
 export const PAYERS = [
   { value: "company", label: "Company" },
   { value: "owner_mg", label: "Owner (MG)" },
   { value: "owner_hll", label: "Owner (HLL)" },
-  { value: "owner_ky", label: "Owner (KY)" },
   { value: "petty_cash", label: "Petty Cash" },
   { value: "creditor", label: "Creditor" },
 ] as const;
+
+/**
+ * Payers who no longer buy for the business but whose purchases are still in
+ * the books. Kept out of the dropdown so nothing new can be recorded against
+ * them, and kept everywhere else — labels, validation, exports — so their
+ * history still reads correctly and can still be edited.
+ *
+ * KY (Yap Sau Yong) ceased to be a partner on 02/10/2026; MG settled what the
+ * company owed her and the liability moved to MG's director loan account.
+ */
+export const RETIRED_PAYERS = [
+  { value: "owner_ky", label: "Owner (KY)" },
+] as const;
+
+/** Every payer the books have ever used. Use this to resolve a stored value. */
+export const ALL_PAYERS = [...PAYERS, ...RETIRED_PAYERS] as const;
+
+/** The label for a stored payer value, retired ones included. */
+export function payerLabel(value: string): string {
+  return (
+    ALL_PAYERS.find((p) => p.value === value)?.label ?? value.replace(/_/g, " ")
+  );
+}
+
+/** Whether a stored payer value is one the books accept at all. */
+export function isKnownPayer(value: string): boolean {
+  return ALL_PAYERS.some((p) => p.value === value);
+}
 
 export const EXPENSE_TYPES = [
   { value: "expense", label: "Expense" },
