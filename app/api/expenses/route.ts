@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { PAYERS, EXPENSE_TYPES, REIMBURSABLE_PAYERS } from "@/lib/constants";
+import {
+  EXPENSE_TYPES,
+  REIMBURSABLE_PAYERS,
+  isKnownPayer,
+  payerLabel,
+} from "@/lib/constants";
 import { suggestExpenseCategory } from "@/lib/aiCategory";
 import { today } from "@/lib/format";
 
@@ -52,7 +57,7 @@ export async function POST(req: Request) {
       { error: "Category is too long (max 50 chars)" },
       { status: 400 },
     );
-  if (!PAYERS.some((p) => p.value === payer))
+  if (!isKnownPayer(payer))
     return NextResponse.json({ error: "Invalid payer" }, { status: 400 });
   if (!EXPENSE_TYPES.some((t) => t.value === expense_type))
     return NextResponse.json({ error: "Invalid expense type" }, { status: 400 });
@@ -145,8 +150,7 @@ export async function POST(req: Request) {
   if (REIMBURSABLE_PAYERS.includes(payer)) {
     // Owe it back to the named payer (e.g. "Owner (MG)", "Staff Card").
     const owed_to =
-      PAYERS.find((p) => p.value === payer)?.label ??
-      (payer === "personal" ? "Owner (personal)" : payer);
+      payer === "personal" ? "Owner (personal)" : payerLabel(payer);
     const { data: r } = await supabase
       .from("reimbursements")
       .insert({
