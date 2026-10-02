@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Expense, Reimbursement } from "@/lib/types";
 import { rm } from "@/lib/format";
 import { amountInWords } from "@/lib/amountInWords";
-import { voucherView, slipLabel } from "@/lib/voucher";
+import { voucherView, slipLabel, type VoucherMode } from "@/lib/voucher";
 import { EntityLetterhead } from "@/components/EntityLetterhead";
 
 // A blank ruled line for details filled in by hand at the counter.
@@ -15,13 +15,17 @@ function Blank() {
 export function PurchaseVoucher({
   expense,
   reimbursement,
+  mode = "reimbursement",
 }: {
   expense: Expense;
   reimbursement: Reimbursement | null;
+  /** Which side of the purchase to print — see lib/voucher. */
+  mode?: VoucherMode;
 }) {
   // Which of the three vouchers this is, and the wording that goes with it —
   // shared with the PDF so the printed and downloaded copies can't drift.
-  const v = voucherView(expense, reimbursement);
+  const v = voucherView(expense, reimbursement, mode);
+  const isPayee = mode === "payee";
   const isDirect = v.isDirect;
   const selfCertified = v.selfCertified;
 
@@ -47,7 +51,17 @@ export function PurchaseVoucher({
           <h1 className="text-xl font-bold tracking-tight">{v.title}</h1>
         </div>
         <div className="flex items-center gap-3">
-          {!isDirect && !v.voucherDate && (
+          {/* The same purchase has two documents: one for whoever fronted the
+              money, one for whoever received it. Each links to the other. */}
+          {!isDirect && (
+            <Link
+              href={`/expenses/${expense.id}/voucher${isPayee ? "" : "?for=payee"}`}
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
+            >
+              {isPayee ? "Reimbursement voucher" : "Payee acknowledgement"}
+            </Link>
+          )}
+          {!isPayee && !isDirect && !v.voucherDate && (
             <p className="text-sm text-amber-700">
               Not reimbursed yet — the date line prints blank.
             </p>
@@ -55,7 +69,7 @@ export function PurchaseVoucher({
           {/* A download works on a device with no printer configured, where
               the browser's Print dialog has nothing to send to. */}
           <a
-            href={`/api/expenses/${expense.id}/voucher-pdf`}
+            href={`/api/expenses/${expense.id}/voucher-pdf${isPayee ? "?for=payee" : ""}`}
             className="rounded-md border border-neutral-300 px-4 py-1.5 text-sm font-medium hover:bg-neutral-50"
           >
             Download PDF
@@ -243,7 +257,7 @@ export function PurchaseVoucher({
         {v.declaration && (
           <div className="mt-4 rounded-md border border-neutral-400 bg-neutral-50 p-3 text-[11.5px] leading-snug print:bg-white">
             <p className="mb-1 font-semibold uppercase tracking-wide text-neutral-500">
-              Declaration
+              {v.declarationLabel}
             </p>
             <p>{v.declaration}</p>
           </div>

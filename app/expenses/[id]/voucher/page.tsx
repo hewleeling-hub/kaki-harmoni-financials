@@ -11,10 +11,13 @@ export const dynamic = "force-dynamic";
 // the day the money moved back). lib/voucher picks which of the three it is.
 export default async function VoucherPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ for?: string }>;
 }) {
   const { id } = await params;
+  const { for: which } = await searchParams;
   const supabase = createAdminClient();
 
   const { data: expense } = await supabase
@@ -34,6 +37,7 @@ export default async function VoucherPage({
     <PurchaseVoucher
       expense={expense as Expense}
       reimbursement={(reimbursement as Reimbursement) ?? null}
+      mode={which === "payee" ? "payee" : "reimbursement"}
     />
   );
 }
