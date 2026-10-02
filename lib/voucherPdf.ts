@@ -11,7 +11,7 @@ import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import type { Expense, Reimbursement } from "./types";
 import { amountInWords } from "./amountInWords";
-import { voucherView, slipLabel } from "./voucher";
+import { voucherView, slipLabel, type VoucherMode } from "./voucher";
 import { businessConfig, entitySubline } from "../config/business";
 
 // A4 in points, with the same 14mm margin the print stylesheet uses.
@@ -89,6 +89,7 @@ function wrap(font: PDFFont, s: string, size: number, maxW: number): string[] {
 export async function buildVoucherPdf(
   expense: Expense,
   reimbursement: Reimbursement | null,
+  mode: VoucherMode = "reimbursement",
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
@@ -103,7 +104,7 @@ export async function buildVoucherPdf(
 
   // Which voucher this is, and its wording — shared with the on-screen copy
   // (see components/PurchaseVoucher) so the two can't drift apart.
-  const v = voucherView(expense, reimbursement);
+  const v = voucherView(expense, reimbursement, mode);
   const selfCertified = v.selfCertified;
   const beingFor = v.beingFor ?? v.beingForFallback;
 
@@ -142,8 +143,14 @@ export async function buildVoucherPdf(
   text(c, v.beingForLabel, colR, y, { size: 7.5, color: MUTED });
   y -= 13;
   text(c, v.paidTo, M, y, { size: 11, bold: true });
-  text(c, beingFor, colR, y, { size: 9, bold: true });
-  y -= 20;
+  // "Being payment for" carries a free-text description and will happily run
+  // off the page; wrap it, and let what follows clear the longer of the two.
+  let beingForY = y;
+  for (const l of wrap(bold, beingFor, 9, RIGHT - colR)) {
+    text(c, l, colR, beingForY, { size: 9, bold: true });
+    beingForY -= 11;
+  }
+  y = Math.min(y - 20, beingForY - 9);
 
   text(c, "PO No.", M, y, { size: 7.5, color: MUTED });
   text(c, "Purchase date", colR, y, { size: 7.5, color: MUTED });
@@ -272,7 +279,7 @@ export async function buildVoucherPdf(
       borderColor: MUTED,
       borderWidth: 0.6,
     });
-    text(c, "DECLARATION", M + 10, y, { size: 7, bold: true, color: MUTED });
+    text(c, v.declarationLabel.toUpperCase(), M + 10, y, { size: 7, bold: true, color: MUTED });
     y -= 12;
     for (const l of lines) {
       text(c, l, M + 10, y, { size: 8 });

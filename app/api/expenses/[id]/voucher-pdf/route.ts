@@ -9,10 +9,11 @@ export const dynamic = "force-dynamic";
 // A4 PDF. Exists so a device with no printer configured can still get the
 // document; the browser's Print dialog needs a printer, a download does not.
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const payee = new URL(req.url).searchParams.get("for") === "payee";
   const supabase = createAdminClient();
 
   const { data: expense } = await supabase
@@ -51,7 +52,7 @@ export async function GET(
     );
   }
 
-  const pdf = await buildVoucherPdf(e, r);
+  const pdf = await buildVoucherPdf(e, r, payee ? "payee" : "reimbursement");
   const name = (r?.pv_number ?? e.pv_number ?? e.po_number ?? "voucher").replace(
     /[^A-Za-z0-9-]/g,
     "",
@@ -60,7 +61,7 @@ export async function GET(
   return new NextResponse(new Uint8Array(pdf), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${name}-petty-cash-voucher.pdf"`,
+      "Content-Disposition": `attachment; filename="${name}-${payee ? "payment" : "purchase"}-voucher.pdf"`,
       "Cache-Control": "no-store",
     },
   });

@@ -9,6 +9,17 @@ import type { Expense, Reimbursement, LineItem } from "./types";
 import { payerLabel } from "./constants";
 import { gmt8Date } from "./format";
 import { businessConfig } from "../config/business";
+import { amountInWords } from "./amountInWords";
+
+/**
+ * Which document is being printed for a purchase.
+ *
+ *   reimbursement — the default: made out to whoever fronted the money, for
+ *                   the business to pay them back.
+ *   payee         — made out to the supplier who received the money, for them
+ *                   to sign acknowledging it. Same purchase, other side of it.
+ */
+export type VoucherMode = "reimbursement" | "payee";
 
 export type VoucherView = {
   /** Cash handed straight out of the tin — the money has already moved. */
@@ -25,11 +36,21 @@ export type VoucherView = {
   /** Blank until the money actually moves back to whoever fronted it. */
   voucherDate: string | null;
   signatures: readonly [string, string, string];
-  /** The certification printed above the signatures. Null unless self-certified. */
+  /** The certification printed above the signatures. Null when there is none. */
   declaration: string | null;
+  /** What that block is headed — a buyer certifies, a payee acknowledges. */
+  declarationLabel: string;
   /** How much of the voucher a supplier slip backs up. Null unless self-certified. */
   slipSummary: string | null;
 };
+
+/** The payee's acknowledgement, printed above their signature. */
+function acknowledgement(amountInWordsPlaceholder: string): string {
+  return (
+    `Received from ${businessConfig.legalName} the sum of ${amountInWordsPlaceholder} ` +
+    `in full settlement of the particulars listed above.`
+  );
+}
 
 /** Did this line come with a slip from the stall? Absent on older rows. */
 export function slipLabel(li: LineItem): string {
@@ -41,18 +62,26 @@ export function slipLabel(li: LineItem): string {
 export function voucherView(
   expense: Expense,
   reimbursement: Reimbursement | null,
+  mode: VoucherMode = "reimbursement",
 ): VoucherView {
-  const isDirect = expense.payer === "petty_cash" && !reimbursement;
-  const selfCertified = !!expense.self_certified;
+  // A payee voucher names the supplier however the money reached them, so the
+  // petty-cash/reimbursement distinction does not apply to it.
+  const isPayee = mode === "payee";
+  const isDirect = !isPayee && expense.payer === "petty_cash" && !reimbursement;
+  // Self-certification is the buyer swearing to their own spending. On a payee
+  // voucher the payee signs instead, so it has no place there.
+  const selfCertified = !isPayee && !!expense.self_certified;
   const lineItems = expense.line_items ?? [];
 
-  const paidTo = isDirect
-    ? expense.vendor
-    : (reimbursement?.owed_to ?? payerLabel(expense.payer));
+  const paidTo =
+    isPayee || isDirect
+      ? expense.vendor
+      : (reimbursement?.owed_to ?? payerLabel(expense.payer));
 
   // "Paid to" already names the payee on a direct voucher, so the second field
   // says what the money was for instead of repeating the name.
-  const beingFor = isDirect ? expense.description || null : expense.vendor;
+  const beingFor =
+    isPayee || isDirect ? expense.description || null : expense.vendor;
 
   const withSlip = lineItems.filter((li) => li.has_slip === true).length;
   const withoutSlip = lineItems.filter((li) => li.has_slip === false).length;
@@ -62,33 +91,44 @@ export function voucherView(
     selfCertified,
     // A self-certified purchase is its own document, so it gets its own name —
     // calling it a petty cash voucher would misstate where the money came from.
-    title: isDirect
-      ? "Petty Cash Voucher"
-      : selfCertified
-        ? "Market Purchase Voucher"
-        : "Purchase Voucher",
+    title: isPayee
+      ? "Payment Voucher"
+      : isDirect
+        ? "Petty Cash Voucher"
+        : selfCertified
+          ? "Market Purchase Voucher"
+          : "Purchase Voucher",
     pvNumber: reimbursement?.pv_number ?? expense.pv_number,
     paidTo,
-    beingForLabel: isDirect
-      ? "Being payment for"
-      : selfCertified
-        ? "Bought at"
-        : "Being reimbursement for",
+    beingForLabel:
+      isPayee || isDirect
+        ? "Being payment for"
+        : selfCertified
+          ? "Bought at"
+          : "Being reimbursement for",
     beingFor,
     beingForFallback: expense.category.replace(/_/g, " "),
-    voucherDate: isDirect
-      ? expense.expense_date
-      : reimbursement?.settled_at
-        ? gmt8Date(reimbursement.settled_at)
+    // A payee dates their own signature, so the header date is the purchase
+    // date — when the books say the money was due to them.
+    voucherDate:
+      isPayee || isDirect
+        ? expense.expense_date
+        : reimbursement?.settled_at
+          ? gmt8Date(reimbursement.settled_at)
+          : null,
+    signatures: isPayee
+      ? ["Received by", "Paid by", "Approved by"]
+      : selfCertified
+        ? ["Purchased & certified by", "Approved by", "Reimbursed by"]
+        : ["Received by", "Approved by", "Paid by"],
+    declarationLabel: isPayee ? "Acknowledgement" : "Declaration",
+    declaration: isPayee
+      ? acknowledgement(amountInWords(Number(expense.amount)))
+      : selfCertified
+        ? `I certify that the items listed above were bought for the business of ${businessConfig.legalName} ` +
+          `and paid for with my own cash. Where the Slip column reads "No", no supplier receipt was issued or ` +
+          `available. The particulars and amounts above are true and correct.`
         : null,
-    signatures: selfCertified
-      ? ["Purchased & certified by", "Approved by", "Reimbursed by"]
-      : ["Received by", "Approved by", "Paid by"],
-    declaration: selfCertified
-      ? `I certify that the items listed above were bought for the business of ${businessConfig.legalName} ` +
-        `and paid for with my own cash. Where the Slip column reads "No", no supplier receipt was issued or ` +
-        `available. The particulars and amounts above are true and correct.`
-      : null,
     slipSummary:
       selfCertified && lineItems.length > 0
         ? `${withSlip} of ${lineItems.length} ${
