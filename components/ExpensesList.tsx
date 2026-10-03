@@ -19,6 +19,23 @@ import { amortise } from "@/lib/posting";
 import { ExportButton } from "@/components/ExportButton";
 import { PostToLedger } from "@/components/PostToLedger";
 
+/**
+ * Does this purchase's PO number match what was typed?
+ *
+ * Both sides are stripped to letters and digits and upper-cased, so "166",
+ * "0166", "po-0166" and "PO-0166" all find PO-0166 — nobody should have to
+ * type the prefix or count the leading zeros to find a row.
+ */
+export function matchesPoQuery(
+  poNumber: string | null | undefined,
+  query: string,
+): boolean {
+  const q = query.replace(/[^a-z0-9]/gi, "").toUpperCase();
+  if (!q) return true;
+  const po = (poNumber ?? "").replace(/[^a-z0-9]/gi, "").toUpperCase();
+  return po.includes(q);
+}
+
 // Payment status of a purchase: business-paid vs owed (owner-fronted/creditor).
 function payStatus(e: Expense): {
   key: "paid" | "owed" | "settled";
@@ -40,6 +57,7 @@ function payStatus(e: Expense): {
 
 export function ExpensesList() {
   const [expenses, setExpenses] = useState<Expense[] | null>(null);
+  const [poFilter, setPoFilter] = useState("");
   const [payerFilter, setPayerFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
@@ -60,6 +78,7 @@ export function ExpensesList() {
     if (!expenses) return [];
     return expenses.filter(
       (e) =>
+        matchesPoQuery(e.po_number, poFilter) &&
         (payerFilter === "all" || e.payer === payerFilter) &&
         (typeFilter === "all" || e.expense_type === typeFilter) &&
         (yearFilter === "all" || String(e.expense_date).slice(0, 4) === yearFilter) &&
@@ -67,7 +86,15 @@ export function ExpensesList() {
           String(e.expense_date).slice(5, 7) === monthFilter) &&
         (statusFilter === "all" || payStatus(e).key === statusFilter),
     );
-  }, [expenses, payerFilter, typeFilter, yearFilter, monthFilter, statusFilter]);
+  }, [
+    expenses,
+    poFilter,
+    payerFilter,
+    typeFilter,
+    yearFilter,
+    monthFilter,
+    statusFilter,
+  ]);
 
   const owedTotal = (expenses ?? [])
     .filter((e) => payStatus(e).key === "owed")
@@ -123,6 +150,14 @@ export function ExpensesList() {
       </div>
 
       <div className="mb-4 flex flex-wrap gap-3">
+        <input
+          type="search"
+          value={poFilter}
+          onChange={(e) => setPoFilter(e.target.value)}
+          placeholder="PO number"
+          aria-label="Filter by PO number"
+          className="w-36 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        />
         <select
           value={payerFilter}
           onChange={(e) => setPayerFilter(e.target.value)}
