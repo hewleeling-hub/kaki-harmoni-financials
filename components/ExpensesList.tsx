@@ -38,6 +38,21 @@ function payStatus(e: Expense): {
   return { key: "owed", label: "Owed", cls: "bg-amber-100 text-amber-800" };
 }
 
+// PO search: "158", "0158" and "PO-0158" all find PO-0158, and a list such as
+// "32, 158 160" brings several up side by side. A bare number is matched
+// exactly, so "15" finds PO-0015 and not every PO with a 15 in it.
+function matchesPo(po: string | null, query: string): boolean {
+  const tokens = query.split(/[\s,;]+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+  if (!po) return false;
+  const poNum = Number(po.replace(/\D/g, ""));
+  return tokens.some((t) =>
+    /^(po-?)?\d+$/i.test(t)
+      ? Number(t.replace(/\D/g, "")) === poNum
+      : po.toLowerCase().includes(t.toLowerCase()),
+  );
+}
+
 export function ExpensesList() {
   const [expenses, setExpenses] = useState<Expense[] | null>(null);
   const [payerFilter, setPayerFilter] = useState("all");
@@ -45,6 +60,7 @@ export function ExpensesList() {
   const [yearFilter, setYearFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [poQuery, setPoQuery] = useState("");
   const [postingId, setPostingId] = useState<string | null>(null);
 
   function load() {
@@ -65,9 +81,18 @@ export function ExpensesList() {
         (yearFilter === "all" || String(e.expense_date).slice(0, 4) === yearFilter) &&
         (monthFilter === "all" ||
           String(e.expense_date).slice(5, 7) === monthFilter) &&
-        (statusFilter === "all" || payStatus(e).key === statusFilter),
+        (statusFilter === "all" || payStatus(e).key === statusFilter) &&
+        matchesPo(e.po_number, poQuery),
     );
-  }, [expenses, payerFilter, typeFilter, yearFilter, monthFilter, statusFilter]);
+  }, [
+    expenses,
+    payerFilter,
+    typeFilter,
+    yearFilter,
+    monthFilter,
+    statusFilter,
+    poQuery,
+  ]);
 
   const owedTotal = (expenses ?? [])
     .filter((e) => payStatus(e).key === "owed")
@@ -123,6 +148,14 @@ export function ExpensesList() {
       </div>
 
       <div className="mb-4 flex flex-wrap gap-3">
+        <input
+          type="search"
+          value={poQuery}
+          onChange={(e) => setPoQuery(e.target.value)}
+          placeholder="PO no. e.g. 158 or 32, 158"
+          aria-label="Search by PO number"
+          className="w-56 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+        />
         <select
           value={payerFilter}
           onChange={(e) => setPayerFilter(e.target.value)}
