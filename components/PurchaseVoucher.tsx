@@ -134,6 +134,7 @@ export function PurchaseVoucher({
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-neutral-300 text-left text-xs uppercase tracking-wide text-neutral-500">
+              <th className="w-10 py-2 font-medium">No.</th>
               <th className="py-2 font-medium">Particulars</th>
               <th className="w-24 py-2 text-right font-medium">Qty</th>
               {selfCertified && (
@@ -146,6 +147,7 @@ export function PurchaseVoucher({
             {itemised ? (
               lineItems.map((li, i) => (
                 <tr key={i} className="border-b border-neutral-100 align-top">
+                  <td className="py-2 tabular-nums text-neutral-500">{i + 1}</td>
                   <td className="py-2">{li.description}</td>
                   <td className="py-2 text-right tabular-nums">
                     {li.quantity || ""}
@@ -166,6 +168,7 @@ export function PurchaseVoucher({
               ))
             ) : (
               <tr className="border-b border-neutral-100 align-top">
+                <td className="py-2 tabular-nums text-neutral-500">1</td>
                 <td className="py-2">
                   {expense.description || expense.category.replace(/_/g, " ")}
                 </td>
@@ -179,6 +182,7 @@ export function PurchaseVoucher({
 
             {itemised && Math.abs(unallocated) >= 0.01 && (
               <tr className="border-b border-neutral-100 align-top">
+                <td className="py-2" />
                 <td className="py-2 text-neutral-500">
                   Other / rounding not itemised
                 </td>
@@ -197,6 +201,7 @@ export function PurchaseVoucher({
               <tr key={`blank-${i}`} className="border-b border-neutral-100">
                 <td className="py-2">&nbsp;</td>
                 <td className="py-2" />
+                <td className="py-2" />
                 {selfCertified && <td className="py-2" />}
                 <td className="py-2" />
               </tr>
@@ -208,7 +213,7 @@ export function PurchaseVoucher({
             {discount > 0 && (
               <>
                 <tr className="border-t border-neutral-300 text-neutral-600">
-                  <td className="py-1.5" colSpan={selfCertified ? 3 : 2}>
+                  <td className="py-1.5" colSpan={selfCertified ? 4 : 3}>
                     Subtotal
                   </td>
                   <td className="py-1.5 text-right tabular-nums">
@@ -216,7 +221,7 @@ export function PurchaseVoucher({
                   </td>
                 </tr>
                 <tr className="text-neutral-600">
-                  <td className="py-1.5" colSpan={selfCertified ? 3 : 2}>
+                  <td className="py-1.5" colSpan={selfCertified ? 4 : 3}>
                     Discount
                   </td>
                   <td className="py-1.5 text-right tabular-nums">
@@ -226,7 +231,7 @@ export function PurchaseVoucher({
               </>
             )}
             <tr className="border-t-2 border-neutral-900 text-base font-bold">
-              <td className="py-2" colSpan={selfCertified ? 3 : 2}>
+              <td className="py-2" colSpan={selfCertified ? 4 : 3}>
                 Total
               </td>
               <td className="py-2 text-right tabular-nums">

@@ -165,7 +165,11 @@ export async function buildVoucherPdf(
   const amtX = RIGHT;
   const slipX = RIGHT - 105;
   const qtyX = selfCertified ? RIGHT - 165 : RIGHT - 150;
-  text(c, "PARTICULARS", M, y, { size: 7, color: MUTED });
+  // Line numbers sit in their own narrow column so a signed voucher can be
+  // discussed line by line ("line 4 is the cleaner").
+  const descX = M + 20;
+  text(c, "NO.", M, y, { size: 7, color: MUTED });
+  text(c, "PARTICULARS", descX, y, { size: 7, color: MUTED });
   text(c, "QTY", qtyX, y, { size: 7, color: MUTED, align: "right" });
   if (selfCertified)
     text(c, "SLIP", slipX, y, { size: 7, color: MUTED, align: "right" });
@@ -192,10 +196,11 @@ export async function buildVoucherPdf(
           },
         ];
 
-  for (const r of rows) {
+  for (const [n, r] of rows.entries()) {
     // Wrap long particulars rather than letting them run under the amount.
-    const lines = wrap(reg, r.desc, 9, qtyX - M - 12);
+    const lines = wrap(reg, r.desc, 9, qtyX - descX - 12);
 
+    text(c, String(n + 1), M, y, { size: 9, color: MUTED });
     text(c, r.qty, qtyX, y, { size: 9, align: "right" });
     if (selfCertified && r.slip)
       text(c, r.slip, slipX, y, {
@@ -205,7 +210,7 @@ export async function buildVoucherPdf(
       });
     text(c, r.amt.toFixed(2), amtX, y, { size: 9, align: "right" });
     for (const l of lines) {
-      text(c, l, M, y, { size: 9 });
+      text(c, l, descX, y, { size: 9 });
       y -= 12;
     }
     y -= 4;
