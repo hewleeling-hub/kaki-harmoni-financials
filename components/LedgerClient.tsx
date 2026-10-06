@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useEffect, useMemo, useState } from "react";
 import type { Account, JournalWithLines } from "@/lib/types";
 import { rm, today } from "@/lib/format";
@@ -175,6 +177,11 @@ export function LedgerClient({ accounts }: { accounts: Account[] }) {
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2 text-sm">
+                      {j.jv_number && (
+                        <span className="font-mono text-xs text-neutral-500">
+                          {j.jv_number}
+                        </span>
+                      )}
                       <span className="font-medium">{j.entry_date}</span>
                       {j.memo && <span className="text-neutral-600">· {j.memo}</span>}
                       {j.reference && (
@@ -189,6 +196,13 @@ export function LedgerClient({ accounts }: { accounts: Account[] }) {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-semibold tabular-nums">{rm(total)}</span>
+                      <Link
+                        href={`/journals/${j.id}/voucher`}
+                        className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50"
+                        title="Printable journal voucher"
+                      >
+                        Voucher
+                      </Link>
                       {!j.reversed_by && !isReversal && (
                         <button
                           onClick={() => reverse(j.id)}
