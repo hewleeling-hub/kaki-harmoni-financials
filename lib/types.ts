@@ -165,6 +165,8 @@ export type Account = {
 export type Journal = {
   id: string;
   user_id: string | null;
+  /** Document number for the printable voucher (JV-0001...). Stamped on insert. */
+  jv_number: string | null;
   entry_date: string; // YYYY-MM-DD
   memo: string | null;
   reference: string | null;
