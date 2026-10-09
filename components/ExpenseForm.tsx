@@ -406,7 +406,7 @@ export function ExpenseForm({
       >
         <label className="block text-sm">
           <span className="mb-1 block text-neutral-600">
-            {selfCertified ? "Bought at" : "Vendor"}
+            {selfCertified ? "Bought from" : "Vendor"}
           </span>
           <input
             value={form.vendor}
@@ -603,8 +603,9 @@ export function ExpenseForm({
                 No supplier receipt — self-certified
               </span>
               <span className="mt-0.5 block text-xs text-neutral-500">
-                Wet market, hawker, parking. Prints a Market Purchase Voucher
-                with a signed declaration instead of needing a receipt.
+                Wet market, hawker, parking, a casual cleaner. Prints a
+                Self-Certified Purchase Voucher with a signed declaration
+                instead of needing a receipt.
               </span>
             </span>
           </label>

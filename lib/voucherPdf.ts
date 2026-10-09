@@ -112,7 +112,16 @@ export async function buildVoucherPdf(
 
   // ── masthead ──────────────────────────────────────────────────────────────
   text(c, businessConfig.legalName, M, y - 14, { size: 15, bold: true });
-  text(c, v.title.toUpperCase(), RIGHT, y - 13, { size: 13, bold: true, align: "right" });
+  // The title sits on the same line as the company name, so a long one —
+  // "SELF-CERTIFIED PURCHASE VOUCHER" — runs back into it. Shrink until it
+  // clears, rather than letting the two overprint.
+  const titleText = v.title.toUpperCase();
+  const nameEnd = M + bold.widthOfTextAtSize(businessConfig.legalName, 15);
+  let titleSize = 13;
+  while (titleSize > 9 && RIGHT - bold.widthOfTextAtSize(titleText, titleSize) < nameEnd + 18) {
+    titleSize -= 0.5;
+  }
+  text(c, titleText, RIGHT, y - 13, { size: titleSize, bold: true, align: "right" });
   y -= 28;
 
   text(c, entitySubline(), M, y, { size: 7.5, color: MUTED });
