@@ -50,6 +50,11 @@ export const EXPENSE_CATEGORIES = [
   "petrol",
   "toll",
   "meals",
+  // Supplier and amount known, the item not: a card line or a notebook entry
+  // whose invoice has not turned up. A holding line (6795), not a kind of
+  // spending — the row is meant to leave it once the document names what was
+  // bought.
+  "pending_classification",
   "other",
 ] as const;
 
