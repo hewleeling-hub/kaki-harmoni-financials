@@ -37,6 +37,10 @@ export const EXPENSE_CATEGORIES = [
   "maintenance_consumables",
   "utilities",
   "mobile_charges_and_internet",
+  // A software or AI tool billed month by month, with nothing paid in advance:
+  // posts straight to 6440. A subscription paid up front for a term is not this
+  // — that is `subscription`, which sits in prepaid 1350 and releases monthly.
+  "software_subscription",
   "rent",
   "equipment",
   // Festive and seasonal decor, plants, wall pieces, display props — what makes
