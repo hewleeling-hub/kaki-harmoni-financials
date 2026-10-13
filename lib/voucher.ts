@@ -96,7 +96,7 @@ export function voucherView(
       : isDirect
         ? "Petty Cash Voucher"
         : selfCertified
-          ? "Market Purchase Voucher"
+          ? "Self-Certified Purchase Voucher"
           : "Purchase Voucher",
     pvNumber: reimbursement?.pv_number ?? expense.pv_number,
     paidTo,
@@ -104,7 +104,7 @@ export function voucherView(
       isPayee || isDirect
         ? "Being payment for"
         : selfCertified
-          ? "Bought at"
+          ? "Bought from"
           : "Being reimbursement for",
     beingFor,
     beingForFallback: expense.category.replace(/_/g, " "),

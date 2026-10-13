@@ -37,6 +37,10 @@ export const EXPENSE_CATEGORIES = [
   "maintenance_consumables",
   "utilities",
   "mobile_charges_and_internet",
+  // A software or AI tool billed month by month, with nothing paid in advance:
+  // posts straight to 6440. A subscription paid up front for a term is not this
+  // — that is `subscription`, which sits in prepaid 1350 and releases monthly.
+  "software_subscription",
   "rent",
   "equipment",
   // Festive and seasonal decor, plants, wall pieces, display props — what makes
@@ -50,6 +54,11 @@ export const EXPENSE_CATEGORIES = [
   "petrol",
   "toll",
   "meals",
+  // Supplier and amount known, the item not: a card line or a notebook entry
+  // whose invoice has not turned up. A holding line (6795), not a kind of
+  // spending — the row is meant to leave it once the document names what was
+  // bought.
+  "pending_classification",
   "other",
 ] as const;
 

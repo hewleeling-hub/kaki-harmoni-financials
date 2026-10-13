@@ -79,19 +79,25 @@ function wholeInWords(n: number): string {
 /**
  * Full voucher wording for a MYR amount, e.g.
  *   2580     → "Ringgit Malaysia Two Thousand Five Hundred And Eighty Only"
- *   86.7     → "Ringgit Malaysia Eighty Six And Sen Seventy Only"
+ *   86.7     → "Ringgit Malaysia Eighty Six And Seventy Sen Only"
+ *   0.5      → "Ringgit Malaysia Fifty Sen Only"
  */
 export function amountInWords(amount: number | string | null | undefined): string {
   const n = Math.abs(Number(amount ?? 0));
-  // Round to sen first so 86.699 doesn't render as "…And Sen Seventy" off a
+  // Round to sen first so 86.699 doesn't render as "…And Seventy Sen" off a
   // whole part of 86.69.
   const cents = Math.round(n * 100);
   const ringgit = Math.floor(cents / 100);
   const sen = cents % 100;
 
-  const words = sen
-    ? `${wholeInWords(ringgit)} And Sen ${wholeInWords(sen)}`
-    : wholeInWords(ringgit);
+  // The number goes before the unit — "And Seventy Sen", not "And Sen Seventy".
+  // Under a ringgit there is no whole part to join to, so the sen stand alone
+  // rather than hanging off a "Zero And".
+  const words = !sen
+    ? wholeInWords(ringgit)
+    : ringgit === 0
+      ? `${wholeInWords(sen)} Sen`
+      : `${wholeInWords(ringgit)} And ${wholeInWords(sen)} Sen`;
 
   return `Ringgit Malaysia ${words} Only`;
 }

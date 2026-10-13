@@ -124,6 +124,13 @@ const EXPENSE_ACCOUNT_BY_CATEGORY: Record<string, string> = {
   spa_consumables: "5130", // Spa Consumables
   wellness_consumables: "5130", // legacy key, before the account was renamed
   mobile_charges_and_internet: "6240", // Internet and Telephone
+  // Billed month by month, so it is spent when charged — straight to the P&L.
+  // The same account a prepaid subscription releases into, so a tool reads the
+  // same however it was paid for.
+  software_subscription: "6440", // Software and SaaS Subscriptions
+  // Not a category of spending but a place to hold a purchase until its
+  // invoice says what it was. Rows are expected to leave it.
+  pending_classification: "6795", // Purchases Pending Classification
   // 6360 is the chart's home for non-capital visual material, which is what
   // shop decoration is. It sits under Sales and Marketing rather than
   // Premises because how the room looks is part of what is being sold —
