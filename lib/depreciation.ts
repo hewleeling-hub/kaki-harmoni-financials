@@ -47,22 +47,25 @@ export function depreciationAccountsFor(assetAccount: string | null | undefined)
  * on the asset itself, so a bad default can never quietly reach the books.
  */
 export const SUGGESTED_LIFE_MONTHS: Record<string, number> = {
-  "1510": 120, // Furniture and fittings — 10 years
-  "1520": 60, // Wellness equipment — 5 years, worked hard every day
-  "1530": 60, // Café equipment — 5 years
-  "1540": 60, // Water system — 5 years
-  // Air conditioning — 5 years and no longer. It is fixed to the premises,
-  // but a compressor worked daily in this climate is spent well before ten
-  // years, and the clubhouse is not ours to hold that long either.
-  "1550": 60,
-  "1560": 36, // Computers — 3 years
-  "1570": 36, // POS hardware — 3 years
-  "1580": 60, // CCTV — 5 years
-  // Renovation and fit-out — 3 years. The clubhouse lease runs a year at a
-  // time with an extension we expect but do not hold, so five years would
-  // outlast any term we can point to, and one year would write the fit-out
-  // off before it has earned anything. Three is the honest middle.
-  "1590": 36,
+  // Two lives, decided by one question: can it leave with us?
+  //
+  // Anything fixed to the clubhouse — wiring, glass, air conditioning, the
+  // fit-out — is written off over 3 years. The lease runs a year at a time
+  // with an extension we expect but do not hold, and depreciation already
+  // charged cannot be clawed back if we stay longer, so three years is the
+  // honest middle between a one-year term and a five-year guess.
+  //
+  // Anything we could carry out of the door — furniture, equipment, the
+  // computers — lasts as long as it lasts, and that is 5 years.
+  "1510": 60, // Furniture and fittings — moveable
+  "1520": 60, // Wellness equipment — moveable
+  "1530": 60, // Café equipment — moveable
+  "1540": 36, // Water system — plumbed into the premises
+  "1550": 36, // Air conditioning — cassette unit and piping, stays with the unit
+  "1560": 60, // Computer and office equipment — moveable
+  "1570": 60, // POS hardware — moveable
+  "1580": 36, // CCTV and security — wired into the premises
+  "1590": 36, // Renovation and fit-out — stays with the premises
 };
 
 export function suggestedLifeMonths(assetAccount: string | null | undefined): number | null {
