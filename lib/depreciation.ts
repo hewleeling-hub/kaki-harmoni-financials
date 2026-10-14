@@ -51,7 +51,10 @@ export const SUGGESTED_LIFE_MONTHS: Record<string, number> = {
   "1520": 60, // Wellness equipment — 5 years, worked hard every day
   "1530": 60, // Café equipment — 5 years
   "1540": 60, // Water system — 5 years
-  "1550": 120, // Air conditioning — 10 years, part of the premises
+  // Air conditioning — 5 years and no longer. It is fixed to the premises,
+  // but a compressor worked daily in this climate is spent well before ten
+  // years, and the clubhouse is not ours to hold that long either.
+  "1550": 60,
   "1560": 36, // Computers — 3 years
   "1570": 36, // POS hardware — 3 years
   "1580": 60, // CCTV — 5 years
