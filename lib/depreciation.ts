@@ -58,7 +58,11 @@ export const SUGGESTED_LIFE_MONTHS: Record<string, number> = {
   "1560": 36, // Computers — 3 years
   "1570": 36, // POS hardware — 3 years
   "1580": 60, // CCTV — 5 years
-  "1590": 60, // Renovation — 5 years, or the lease term if shorter
+  // Renovation and fit-out — 3 years. The clubhouse lease runs a year at a
+  // time with an extension we expect but do not hold, so five years would
+  // outlast any term we can point to, and one year would write the fit-out
+  // off before it has earned anything. Three is the honest middle.
+  "1590": 36,
 };
 
 export function suggestedLifeMonths(assetAccount: string | null | undefined): number | null {
