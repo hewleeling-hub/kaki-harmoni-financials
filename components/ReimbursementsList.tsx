@@ -24,6 +24,7 @@ export function ReimbursementsList() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [owedFilter, setOwedFilter] = useState("all");
+  const [query, setQuery] = useState("");
 
   async function load() {
     const res = await fetch("/api/reimbursements", { cache: "no-store" });
@@ -57,14 +58,26 @@ export function ReimbursementsList() {
     () => [...new Set((rows ?? []).map((r) => r.owed_to))].sort(),
     [rows],
   );
+  // A PV number is what people have in front of them — printed on a voucher,
+  // written on a note — so the search forgives how it is typed: "PV-0122",
+  // "pv0122" and a bare "122" all find the same row. Payee and vendor are
+  // searched too, since those are what the row shows beside the number.
   const filtered = useMemo(() => {
-    return (rows ?? []).filter(
-      (r) =>
-        (statusFilter === "all" ||
-          (statusFilter === "settled" ? r.is_settled : !r.is_settled)) &&
-        (owedFilter === "all" || r.owed_to === owedFilter),
-    );
-  }, [rows, statusFilter, owedFilter]);
+    const q = query.trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, "");
+    return (rows ?? []).filter((r) => {
+      const statusOk =
+        statusFilter === "all" ||
+        (statusFilter === "settled" ? r.is_settled : !r.is_settled);
+      if (!statusOk) return false;
+      if (owedFilter !== "all" && r.owed_to !== owedFilter) return false;
+      if (!q) return true;
+      const pv = (r.pv_number ?? "").toLowerCase();
+      const haystack = `${pv} ${r.owed_to ?? ""} ${r.vendor ?? ""}`.toLowerCase();
+      if (haystack.includes(q)) return true;
+      return qDigits.length > 0 && pv.replace(/\D/g, "").includes(qDigits);
+    });
+  }, [rows, statusFilter, owedFilter, query]);
   const filteredTotal = filtered.reduce((a, r) => a + Number(r.amount), 0);
 
   return (
@@ -81,6 +94,14 @@ export function ReimbursementsList() {
 
       {rows && rows.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-3">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search PV number, payee or vendor"
+            aria-label="Search reimbursements"
+            className="w-64 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+          />
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
