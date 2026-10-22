@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { computeReport, reportRange } from "@/lib/reports";
+import { loadStatements } from "@/lib/financialStatementsServer";
+import type { StatementLine, Total } from "@/lib/financialStatements";
 import { getSalesLedger } from "@/lib/sales";
 import { dayBounds, today, timeOfDay, gmt8Date } from "@/lib/format";
 import { REIMBURSABLE_PAYERS, payerLabel } from "@/lib/constants";
@@ -309,9 +311,78 @@ export async function GET(
         : range.start === range.end
           ? range.start
           : `${range.start}_to_${range.end}`;
+
+    // Profit & loss and balance sheet, same shape as the reports page.
+    const statements = await loadStatements(range.start, range.end);
+    const plRows: Record<string, unknown>[] = [];
+    const bsRows: Record<string, unknown>[] = [];
+    if (statements) {
+      const { profitAndLoss: pl, balanceSheet: bs } = statements;
+      const plLine = (l: StatementLine, indent = true) => ({
+        Account: `${indent ? "    " : ""}${l.name}`,
+        "A/C": l.code,
+        [`${r.label} (RM)`]: l.period,
+        "To Date (RM)": l.cumulative,
+      });
+      const plTotal = (label: string, t: Total) => ({
+        Account: label,
+        "A/C": "",
+        [`${r.label} (RM)`]: t.period,
+        "To Date (RM)": t.cumulative,
+      });
+      const plHead = (label: string) => ({ Account: label, "A/C": "" });
+      plRows.push(plHead("REVENUE"), ...pl.revenue.map((l) => plLine(l)));
+      plRows.push(plTotal("Gross revenue", pl.grossRevenue));
+      plRows.push(...pl.discounts.map((l) => plLine(l)));
+      plRows.push(plTotal("NET REVENUE", pl.netRevenue), plHead(""));
+      plRows.push(plHead("COST OF SALES"), ...pl.costOfSales.map((l) => plLine(l)));
+      plRows.push(plTotal("Total cost of sales", pl.totalCostOfSales));
+      plRows.push(plTotal("GROSS PROFIT / (LOSS)", pl.grossProfit), plHead(""));
+      plRows.push(plHead("OPERATING EXPENSES"), ...pl.operatingExpenses.map((l) => plLine(l)));
+      plRows.push(plTotal("Total operating expenses", pl.totalOperatingExpenses));
+      plRows.push(plTotal("PROFIT / (LOSS) FOR THE PERIOD", pl.profit));
+
+      const bsLine = (name: string, code: string, amount: number) => ({
+        Account: `    ${name}`,
+        "A/C": code,
+        "RM": amount,
+      });
+      const bsTotal = (name: string, amount: number) => ({
+        Account: name,
+        "A/C": "",
+        "RM": amount,
+      });
+      const bsHead = (name: string) => ({ Account: name, "A/C": "" });
+      bsRows.push(bsHead("NON-CURRENT ASSETS"));
+      bsRows.push(...bs.nonCurrent.map((l) => bsLine(l.name, l.code, l.cumulative)));
+      bsRows.push(bsTotal("At cost", bs.totalCost));
+      bsRows.push(...bs.accumulatedDepreciation.map((l) => bsLine(l.name, l.code, -l.cumulative)));
+      bsRows.push(bsTotal("Net book value", bs.netBookValue), bsHead(""));
+      bsRows.push(bsHead("CURRENT ASSETS"));
+      bsRows.push(...bs.current.map((l) => bsLine(l.name, l.code, l.cumulative)));
+      bsRows.push(bsTotal("Total current assets", bs.totalCurrent));
+      bsRows.push(bsTotal("TOTAL ASSETS", bs.totalAssets), bsHead(""));
+      bsRows.push(bsHead("LIABILITIES"));
+      bsRows.push(...bs.liabilities.map((l) => bsLine(l.name, l.code, l.cumulative)));
+      bsRows.push(bsTotal("TOTAL LIABILITIES", bs.totalLiabilities), bsHead(""));
+      bsRows.push(bsHead("EQUITY"));
+      bsRows.push(bsLine("Share capital", "3100", bs.shareCapital));
+      bsRows.push(bsLine("Retained profit / (loss)", "", bs.retainedEarnings));
+      bsRows.push(bsTotal("TOTAL EQUITY", bs.totalEquity));
+      bsRows.push(bsTotal("TOTAL LIABILITIES AND EQUITY", bs.totalLiabilitiesAndEquity));
+      bsRows.push(bsHead(""));
+      bsRows.push(
+        bs.outOfBalanceBy === 0
+          ? bsHead("Balanced - total assets agree with total liabilities and equity.")
+          : bsTotal("OUT OF BALANCE BY", bs.outOfBalanceBy),
+      );
+    }
+
     return workbookResponse(
       [
         { name: "Summary", rows: summary },
+        { name: "Profit and Loss", rows: plRows },
+        { name: "Balance Sheet", rows: bsRows },
         { name: "Daily Cashflow", rows: dailyCashflow },
         { name: "Revenue Split", rows: split },
         { name: "Occupancy %", rows: occupancy },
