@@ -3,6 +3,11 @@ import { rm, today } from "@/lib/format";
 import { ReportControls } from "@/components/ReportControls";
 import { ExportButton } from "@/components/ExportButton";
 import { GroupedBars, BreakEvenChart } from "@/components/charts";
+import { loadStatements } from "@/lib/financialStatementsServer";
+import {
+  BalanceSheetReport,
+  ProfitAndLossReport,
+} from "@/components/FinancialStatements";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +61,7 @@ export default async function ReportsPage({
   const sp = await searchParams;
   const range = reportRange(sp);
   const r = await computeReport(range.start, range.end, range.period, range.label);
+  const statements = await loadStatements(range.start, range.end);
 
   const netColor =
     r.net > 0
@@ -117,6 +123,18 @@ export default async function ReportsPage({
 
       {/* Daily cashflow — day-by-day cash in / out / net / running balance */}
       <DailyCashflowSection report={r} />
+
+      {/* Statutory statements — both derived from the ledger, never stored */}
+      {statements && (
+        <>
+          <ProfitAndLossReport
+            pl={statements.profitAndLoss}
+            periodLabel={r.label}
+            asAt={range.end}
+          />
+          <BalanceSheetReport bs={statements.balanceSheet} asAt={range.end} />
+        </>
+      )}
 
       {/* Purchases & payables — accrual vs cash */}
       <section className="rounded-2xl border border-neutral-200 bg-white p-5">
