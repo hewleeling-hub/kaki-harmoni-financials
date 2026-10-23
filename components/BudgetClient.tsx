@@ -5,7 +5,7 @@ import type { Account } from "@/lib/types";
 import { rm } from "@/lib/format";
 import { withDepth } from "@/lib/accounts";
 import { naturalBalance } from "@/lib/ledger";
-import { rollUpNumber, plGroup, higherIsBetter } from "@/lib/budget";
+import { rollUpMonthly, plGroup, higherIsBetter } from "@/lib/budget";
 
 const TEAL = "#1F5A5E";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -24,10 +24,10 @@ export function BudgetClient({
   year: number;
   currentYear: number;
   currentMonth: number;
-  budgets: Record<string, number>;
+  budgets: Record<string, number[]>;
   actualsNet: Record<string, number[]>;
 }) {
-  const [budget, setBudget] = useState<Record<string, number>>(budgets);
+  const [budget, setBudget] = useState<Record<string, number[]>>(budgets);
   const [period, setPeriod] = useState<Period>({ mode: "ytd", month: currentMonth });
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -40,7 +40,17 @@ export function BudgetClient({
   const periodLabel =
     period.mode === "year" ? "Full year" : period.mode === "month" ? MONTHS[period.month - 1] : "YTD";
 
-  const rolledBudget = useMemo(() => rollUpNumber(accounts, budget), [accounts, budget]);
+  const rolledBudget = useMemo(() => rollUpMonthly(accounts, budget), [accounts, budget]);
+
+  // Budget for the months currently selected.
+  function periodBudgetOf(code: string): number {
+    const arr = rolledBudget[code];
+    if (!arr) return 0;
+    return months.reduce((s, m) => s + (arr[m] ?? 0), 0);
+  }
+  // Only a single-month view can be edited: with several months on screen
+  // there is no one cell to write back to.
+  const editMonth = period.mode === "month" ? period.month : null;
   const plRows = useMemo(
     () => withDepth(accounts).filter((a) => a.statement_group === "profit_loss"),
     [accounts],
@@ -57,7 +67,7 @@ export function BudgetClient({
     await fetch("/api/budgets", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ account_code: code, fiscal_year: year, amount }),
+      body: JSON.stringify({ account_code: code, fiscal_year: year, month: editMonth, amount }),
     });
     setSaving(null);
   }
@@ -71,7 +81,7 @@ export function BudgetClient({
         (s, v, m) => s + (months.includes(m) ? v : 0),
         0,
       );
-      const pBud = (budget[a.code] ?? 0) * months.length;
+      const pBud = months.reduce((s, m) => s + ((budget[a.code] ?? [])[m] ?? 0), 0);
       const g = plGroup(a.code);
       if (g === "revenue") { revA += -net; revB += pBud; }
       else if (g === "expense") { expA += net; expB += pBud; }
@@ -90,7 +100,8 @@ export function BudgetClient({
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Budget vs Actual</h1>
           <p className="text-sm text-neutral-500">
-            Monthly budgets per account · actuals from the ledger · {periodLabel} {year}
+            Budget per account per month · actuals from the ledger · {periodLabel} {year}
+            {!editMonth && " · pick a single month to edit"}
           </p>
         </div>
         <div className="flex items-center gap-1 rounded-lg border border-neutral-300 p-0.5 text-sm">
@@ -139,7 +150,7 @@ export function BudgetClient({
           <thead className="bg-neutral-50 text-left text-neutral-500">
             <tr>
               <th className="px-3 py-2 font-medium">Account</th>
-              <th className="px-3 py-2 text-right font-medium">Monthly&nbsp;Budget</th>
+              <th className="px-3 py-2 text-right font-medium">{editMonth ? `${MONTHS[editMonth - 1]} Budget` : "Avg / month"}</th>
               <th className="px-3 py-2 text-right font-medium">Budget ({periodLabel})</th>
               <th className="px-3 py-2 text-right font-medium">Actual</th>
               <th className="px-3 py-2 text-right font-medium">Variance</th>
@@ -149,8 +160,10 @@ export function BudgetClient({
           <tbody className="divide-y divide-neutral-100">
             {plRows.map((a) => {
               const isHeader = !a.is_postable;
-              const monthlyBudget = rolledBudget[a.code] ?? 0;
-              const periodBudget = monthlyBudget * months.length;
+              const periodBudget = periodBudgetOf(a.code);
+              const monthlyBudget = editMonth
+                ? (rolledBudget[a.code] ?? [])[editMonth - 1] ?? 0
+                : periodBudget / (months.length || 1);
               const actual = naturalBalance(a, periodActual(a.code));
               const variance = actual - periodBudget;
               const hasData = Math.abs(periodBudget) > 0.005 || Math.abs(actual) > 0.005;
@@ -169,15 +182,19 @@ export function BudgetClient({
                     </div>
                   </td>
                   <td className="px-3 py-1.5 text-right">
-                    {isHeader ? (
+                    {isHeader || !editMonth ? (
                       <span className="text-neutral-500 tabular-nums">{monthlyBudget ? rm(monthlyBudget) : ""}</span>
                     ) : (
                       <input
                         type="number" min="0" step="10" inputMode="decimal"
-                        value={budget[a.code] ? budget[a.code] : ""}
+                        value={(budget[a.code] ?? [])[editMonth - 1] || ""}
                         placeholder="0"
                         onChange={(e) =>
-                          setBudget((b) => ({ ...b, [a.code]: Number(e.target.value) || 0 }))
+                          setBudget((b) => {
+                            const arr = [...(b[a.code] ?? Array(12).fill(0))];
+                            arr[editMonth - 1] = Number(e.target.value) || 0;
+                            return { ...b, [a.code]: arr };
+                          })
                         }
                         onBlur={(e) => saveBudget(a.code, Number(e.target.value) || 0)}
                         className={`w-24 rounded-md border px-2 py-1 text-right text-sm ${
@@ -206,10 +223,11 @@ export function BudgetClient({
       </div>
 
       <p className="mt-3 text-xs text-neutral-400">
-        Enter a monthly budget on any leaf account — it saves automatically. The
-        budget column multiplies it by the months in the selected period. Actuals
-        come from posted journals; green variance is favourable (revenue above
-        budget, or costs below).
+        Each account carries its own budget for each month. Choose a single month
+        to edit one — it saves automatically. The budget column adds up the months
+        in the selected period, so a period with no budget shows none. Actuals come
+        from posted journals; green variance is favourable (revenue above budget,
+        or costs below).
       </p>
     </div>
   );

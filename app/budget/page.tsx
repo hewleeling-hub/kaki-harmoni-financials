@@ -52,8 +52,15 @@ export default async function BudgetPage({
       </div>
     );
   }
-  const budgets: Record<string, number> = {};
-  for (const b of (budgetData ?? []) as Budget[]) budgets[b.account_code] = Number(b.amount);
+  // One figure per month per account. A row with month = null is a flat budget
+  // and fills all twelve; a row with a month overrides just that month.
+  const budgets: Record<string, number[]> = {};
+  for (const b of (budgetData ?? []) as Budget[]) {
+    const arr = (budgets[b.account_code] ??= Array(12).fill(0));
+    const amount = Number(b.amount);
+    if (b.month === null || b.month === undefined) arr.fill(amount);
+    else if (b.month >= 1 && b.month <= 12) arr[b.month - 1] = amount;
+  }
 
   // Actuals from the ledger (empty/absent → all zero, page still works).
   let actualsNet: Record<string, number[]> = {};

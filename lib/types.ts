@@ -195,7 +195,8 @@ export type Budget = {
   user_id: string | null;
   account_code: string;
   fiscal_year: number;
-  amount: number; // monthly budget (RM)
+  month: number | null; // 1-12; null = a flat figure for every month
+  amount: number; // budget for that month (RM)
   created_at: string;
   updated_at: string;
 };

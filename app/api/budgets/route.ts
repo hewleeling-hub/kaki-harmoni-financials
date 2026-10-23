@@ -17,16 +17,21 @@ export async function GET(req: Request) {
   return NextResponse.json({ budgets: (data ?? []) as Budget[] });
 }
 
-// PUT — set the monthly budget for one account in one fiscal year (upsert).
+// PUT — set the budget for one account, one fiscal year, one month (upsert).
+// Omit month to set a flat figure that applies to every month of the year.
 export async function PUT(req: Request) {
   const supabase = createAdminClient();
   const body = await req.json().catch(() => ({}));
   const account_code = String(body.account_code ?? "").trim();
   const fiscal_year = Number(body.fiscal_year);
   const amount = Math.round(Number(body.amount) * 100) / 100;
+  const month =
+    body.month === null || body.month === undefined ? null : Number(body.month);
 
   if (!account_code || !Number.isInteger(fiscal_year))
     return NextResponse.json({ error: "account_code and fiscal_year are required." }, { status: 400 });
+  if (month !== null && (!Number.isInteger(month) || month < 1 || month > 12))
+    return NextResponse.json({ error: "month must be 1-12, or omitted." }, { status: 400 });
   if (!Number.isFinite(amount) || amount < 0)
     return NextResponse.json({ error: "Amount must be zero or positive." }, { status: 400 });
 
@@ -43,8 +48,8 @@ export async function PUT(req: Request) {
   const { data, error } = await supabase
     .from("budgets")
     .upsert(
-      { account_code, fiscal_year, amount, updated_at: new Date().toISOString() },
-      { onConflict: "account_code,fiscal_year" },
+      { account_code, fiscal_year, month, amount, updated_at: new Date().toISOString() },
+      { onConflict: "account_code,fiscal_year,month" },
     )
     .select()
     .single();
